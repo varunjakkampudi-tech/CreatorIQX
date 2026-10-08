@@ -1,0 +1,19 @@
+# Normalize line endings: LF in the repo and in working trees on every OS,
+# so shell scripts, Dockerfiles and lockfiles behave the same on Windows.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
