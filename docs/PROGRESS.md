@@ -7,7 +7,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | Last updated | 2026-10-08 |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation, implementation in progress** (plan approved by owner 2026-10-08) |
-| Last PASS ticket | **P0-020** (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-100) |
+| Last PASS ticket | **P0-030** (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-020, P0-100) |
 | Open BLOCKED items | None |
 | Build environment | **Owner's Windows 11 machine** (`C:\Users\Admin\Desktop\creatoriqx`), driven through Claude Desktop Commander. Verified 2026-10-08: Git 2.56, Docker Desktop 29.8 (WSL2), Python 3.14, uv 0.12.23 (installed, on user PATH), Node 22.23, pnpm 12.5; npm, PyPI and Docker Hub reachable; 16 GB RAM. The earlier cloud workspace is retired (OQ-12, OQ-17) |
 | Repository | `github.com/varunjakkampudi-tech/CreatorIQX` (renamed to `CreatorIQX` by the owner on 2026-10-08; remote updated). Appears public (OQ-09). Pushing works |
@@ -28,6 +28,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-013 | PASS | Commit `76320d0`; 13 hooks pass; fake token blocked by gitleaks |
 | P0-100 | PASS | CI green on main (run 37782628775); seeded failing test turned run 37782770458 red at the test step |
 | P0-020 | PASS | Postgres 18 and Redis 8 healthy; 7 role and RLS integration tests pass locally and in CI run 37784481410; seeded BYPASSRLS made 5 fail |
+| P0-030 | PASS | Commit `299fb39`; app factory with /healthz, /readyz (Postgres+Redis, 503 on failure, no detail leak), /metrics, versioned OpenAPI; 51 tests incl. integration, 95% coverage, lint clean |
 
 ## Owner actions pending
 
@@ -60,7 +61,7 @@ Read this file at the start of every session. Update it at the end of every sess
 
 ## Exact next step
 
-**P0-030** (FastAPI app skeleton: settings from env, `/healthz`, `/readyz` checking Postgres and Redis, Prometheus `/metrics`), then P0-031 (logging, correlation IDs, problem+json), P0-032 (security headers), P0-033 (OpenAPI drift). **P0-090** (wireframes, owner approval) can run in parallel. Do not start Phase 1A.
+**P0-031** (structlog JSON logging with correlation-ID middleware and token redaction; typed domain errors mapped to RFC 9457 problem+json), then **P0-032** (secure headers, strict CORS, body-size limit) and **P0-033** (OpenAPI export plus CI drift check). **P0-090** wireframes remain open for the owner's approval. Do not start Phase 1A.
 
 ## Phase 0 scorecard
 
