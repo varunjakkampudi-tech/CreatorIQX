@@ -13,6 +13,7 @@ Commands:
     up           Start local services (PostgreSQL, Redis) and wait until healthy
     down         Stop local services (data volumes are kept)
     api          Run the API on http://127.0.0.1:8000 with auto-reload (needs `up`)
+    openapi      Regenerate packages/api-client/openapi.json from the code
 
 Standard library only, so it runs before any dependency is installed.
 Further commands (migrate and app services) are added by the tickets
@@ -121,12 +122,18 @@ def format_code() -> None:
     run("pnpm", "run", "format")
 
 
+def openapi() -> None:
+    """Regenerate the committed OpenAPI document from the code."""
+    run("uv", "run", "python", "scripts/export_openapi.py")
+
+
 def lint() -> None:
     """Every static check from spec section 17 Code quality and Architecture."""
     run("uv", "run", "ruff", "check", ".")
     run("uv", "run", "ruff", "format", "--check", ".")
     run("uv", "run", "mypy")
     run("uv", "run", "lint-imports")
+    run("uv", "run", "python", "scripts/export_openapi.py", "--check")
     run("pnpm", "run", "format:check")
 
 
@@ -197,6 +204,7 @@ COMMANDS: dict[str, Callable[[], None]] = {
     "up": up,
     "down": down,
     "api": api,
+    "openapi": openapi,
 }
 
 
