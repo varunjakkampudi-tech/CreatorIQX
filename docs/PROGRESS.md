@@ -7,7 +7,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | Last updated | 2026-10-09 |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation, implementation in progress** (plan approved by owner 2026-10-08) |
-| Last PASS ticket | **P0-043** — E5 Data and tenancy, platform tables (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-020, P0-030 to P0-033, P0-040 to P0-042, P0-100) |
+| Last PASS ticket | **P0-044** — E5 Data and tenancy, generated ERD (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-020, P0-030 to P0-033, P0-040 to P0-043, P0-100) |
 | Open BLOCKED items | None |
 | Build environment | **Owner's Windows 11 machine** (`C:\Users\Admin\Desktop\creatoriqx`), driven through Claude Desktop Commander. Git 2.56, Docker Desktop 29.8 (WSL2), Python 3.14.6, uv 0.12.23, Node 22.23, pnpm 12.x. Postgres and Redis run in Docker Compose on 127.0.0.1:55432 / 56379 |
 | Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works |
@@ -36,6 +36,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-041 | PASS | Commit `612264b`; users/workspaces/memberships schema + migration 0002; round-trip and drift checks pass; 93 tests, 89% coverage |
 | P0-042 | PASS | Commit `4914284`; forced RLS + `set_tenant_context`; meta-test verifies every `workspace_id` table; cross-context isolation proven; 96 tests, 92% coverage |
 | P0-043 | PASS | Commit `615eedd`; migration 0004 (`audit_log`, `usage_events`, `outbox_events`, `idempotency_keys`); append-only proven at the privilege layer and the trigger layer; RLS isolation proven; 101 tests, 93% coverage |
+| P0-044 | PASS | Commit `568a764`; `scripts/generate_erd.py` produces Mermaid ERD + ownership table + global tables from metadata; `--check` drift guard wired into `dev.py lint`; 6 tests; 107 tests total, 93% coverage |
 
 ## Owner actions pending
 
@@ -59,7 +60,7 @@ Read this file at the start of every session. Update it at the end of every sess
 
 ## Exact next step
 
-**P0-044** (generated ERD: Mermaid from SQLAlchemy metadata into `docs/DATA_MODEL.md`, with a table-owner column, CI fails on drift) — the last ticket in E5 Data and tenancy. Then **E6 Identity and access** starting with **P0-050** (Google OIDC login). **P0-090** wireframes remain open for the owner's written approval before any UI code (E10/E11). Do not start Phase 1A.
+**P0-050** (Google OIDC login) — first ticket of E6 Identity and access. Authorization code flow with PKCE, ID token validation, email allow-list. **P0-090** wireframes remain open for the owner's written approval before any UI code (E10/E11). Do not start Phase 1A.
 
 ## Phase 0 scorecard
 
