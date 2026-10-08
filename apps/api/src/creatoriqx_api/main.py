@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from fastapi import APIRouter, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import make_asgi_app
 
@@ -17,6 +18,7 @@ from creatoriqx_api.platform.errors import install_error_handlers
 from creatoriqx_api.platform.health import HealthCheck, PostgresCheck, RedisCheck, run_checks
 from creatoriqx_api.platform.logging import configure_logging
 from creatoriqx_api.platform.middleware import CorrelationMiddleware
+from creatoriqx_api.platform.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from creatoriqx_api.settings import Settings, get_settings
 
 API_V1_PREFIX = "/api/v1"
@@ -47,7 +49,18 @@ def create_app(
         docs_url=f"{API_V1_PREFIX}/docs" if settings.app_env != "production" else None,
         redoc_url=None,
     )
+    # Middleware is applied outermost-last. Request order: CORS, security
+    # headers, body-size guard, correlation; responses unwind in reverse.
     app.add_middleware(CorrelationMiddleware)
+    app.add_middleware(BodySizeLimitMiddleware, max_bytes=settings.max_request_body_bytes)
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[settings.app_base_url],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["authorization", "content-type", "x-request-id", "idempotency-key"],
+    )
     install_error_handlers(app)
 
     @app.get("/healthz", tags=["health"], summary="Liveness: the process is up")

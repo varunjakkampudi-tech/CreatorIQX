@@ -33,6 +33,13 @@ class Settings(BaseSettings):
     log_level: LogLevel = "INFO"
     database_app_url: SecretStr = Field(description="Runtime role DSN (ADR 0002)")
     redis_url: SecretStr = Field(description="Redis DSN")
+    app_base_url: str = Field(
+        default="http://localhost:3000",
+        description="Browser origin; the only allowed CORS origin",
+    )
+    max_request_body_bytes: int = Field(
+        default=1_000_000, gt=0, description="Reject larger request bodies with 413"
+    )
     product_config_path: Path = _DEFAULT_PRODUCT_CONFIG
     readiness_timeout_seconds: float = Field(default=2.0, gt=0, le=10)
 
