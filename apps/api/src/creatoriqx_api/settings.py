@@ -43,6 +43,29 @@ class Settings(BaseSettings):
     product_config_path: Path = _DEFAULT_PRODUCT_CONFIG
     readiness_timeout_seconds: float = Field(default=2.0, gt=0, le=10)
 
+    # OIDC login (ADR 0004): login-only client, identity scopes only.
+    oidc_client_id: str = Field(default="", description="Google OAuth client ID for login")
+    oidc_client_secret: SecretStr = Field(
+        default=SecretStr(""), description="Google OAuth client secret for login"
+    )
+    auth_allowed_emails: str = Field(
+        default="",
+        description=(
+            "Comma-separated email allow-list for login. "
+            "Empty means no restriction (not recommended for production)"
+        ),
+    )
+    session_secret: SecretStr = Field(description="Secret key for session signing")
+
+    @property
+    def allowed_emails_set(self) -> frozenset[str]:
+        """Parse the comma-separated allow-list into a frozen set."""
+        if not self.auth_allowed_emails.strip():
+            return frozenset()
+        return frozenset(
+            e.strip().lower() for e in self.auth_allowed_emails.split(",") if e.strip()
+        )
+
     @property
     def product_name(self) -> str:
         """The configurable product name (single source: packages/config/product.json)."""

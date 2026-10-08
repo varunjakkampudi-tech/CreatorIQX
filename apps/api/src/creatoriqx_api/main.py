@@ -12,8 +12,12 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import make_asgi_app
+from starlette.middleware.sessions import SessionMiddleware
 
 from creatoriqx_api import __version__
+from creatoriqx_api.modules.identity.api.auth import router as auth_router
+from creatoriqx_api.modules.identity.application.auth_service import AuthService
+from creatoriqx_api.modules.identity.infrastructure.google_oidc import GoogleOIDCProvider
 from creatoriqx_api.platform.errors import install_error_handlers
 from creatoriqx_api.platform.health import HealthCheck, PostgresCheck, RedisCheck, run_checks
 from creatoriqx_api.platform.logging import configure_logging
@@ -61,7 +65,20 @@ def create_app(
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["authorization", "content-type", "x-request-id", "idempotency-key"],
     )
+    app.add_middleware(SessionMiddleware, secret_key=settings.session_secret.get_secret_value())
     install_error_handlers(app)
+
+    # Wire the auth service (OIDC login, ADR 0004).
+    if settings.oidc_client_id:
+        provider = GoogleOIDCProvider(
+            client_id=settings.oidc_client_id,
+            client_secret=settings.oidc_client_secret.get_secret_value(),
+        )
+        app.state.auth_service = AuthService(
+            provider=provider,
+            allowed_emails=settings.allowed_emails_set,
+        )
+        app.include_router(auth_router, prefix=API_V1_PREFIX)
 
     @app.get("/healthz", tags=["health"], summary="Liveness: the process is up")
     async def healthz() -> JSONResponse:
