@@ -6,7 +6,8 @@ name: ci-python
 
 on:
   push:
-    branches: [main]
+    # ci/** branches let CI changes be verified without touching main
+    branches: [main, "ci/**"]
   pull_request:
 
 permissions:
