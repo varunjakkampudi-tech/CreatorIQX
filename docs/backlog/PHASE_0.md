@@ -1,0 +1,143 @@
+# CreatorIQX Phase 0 Backlog
+
+Source of truth: `CLAUDE.md` (MASTER BUILD SPEC Revision 2.5.1). Structure: Phase -> Epic -> Capability -> Ticket.
+
+**Outcome rule (spec §0.8):** every ticket closes as exactly one of PASS, BLOCKED or FAIL. `Pending` means not started. A PASS without the listed evidence is invalid.
+
+**Estimates** are agent-assisted focused hours (agent writes, owner reviews), including tests and docs. They are planning numbers, not promises.
+
+**Phase 0 depth rule:** interfaces plus one working example. Nothing here builds a generalized scheduler, event platform, analytics product, AI gateway or YouTube integration.
+
+---
+
+## Phase 0: Foundation
+
+### E1. Governance and documentation
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-001 | 0 | E1 Governance and docs | Repo docs bootstrap | Commit `CLAUDE.md` (spec 2.5.1, renamed CreatorIQX), `docs/PROGRESS.md`, `CHANGELOG.md` (Keep a Changelog), `README.md` stub, `CONTRIBUTING.md` stub (conventional commits, trunk-based, Definition of Done, binary outcomes) | Q1 (repo exists) | 0.5 h | Files exist on `main`; spec contains no "YouTube Intelligence Platform" string (grep returns 0) | Pending | Commit SHA; grep output |
+| P0-002 | 0 | E1 Governance and docs | Architecture decisions | ADR template (MADR style) and index; ADR 0001 modular monolith with hexagonal boundaries; ADR 0002 PostgreSQL with RLS for tenancy; ADR 0003 Celery and Redis behind a `TaskQueue` interface | P0-001 | 1 h | Each ADR has status, context, decision, consequences, alternatives, and links the spec section | Pending | Commit SHA; ADR index listing |
+| P0-003 | 0 | E1 Governance and docs | Architecture decisions | ADR 0004 OIDC login separate from YouTube OAuth, with per-capability incremental scopes; ADR 0005 `LLMProvider`, MCP bridge in v1, capped API mode disabled by default; ADR 0006 versioned artifacts and immutable publish snapshots | P0-002 | 1 h | As P0-002 | Pending | Commit SHA |
+| P0-004 | 0 | E1 Governance and docs | Architecture decisions | ADR 0007 YouTube capability model and manual-upload (Private) default workflow; ADR 0008 shared transcripts module; ADR 0009 quota ledger (Redis live, Postgres durable) | P0-002 | 1 h | As P0-002; ADR 0007 lists the six capabilities and four statuses | Pending | Commit SHA |
+| P0-005 | 0 | E1 Governance and docs | Open questions and capability register | Seed `docs/OPEN_QUESTIONS.md` with the seven YouTube items from spec §3, plus: Anthropic usage terms for automated MCP processing, code-scanning licensing for a private repo, Secure / `__Host-` cookie behavior on `http://localhost` per target browser, OIDC library choice. Create `docs/YOUTUBE_CAPABILITIES.md` with all six capabilities marked "not verified, treated as restricted, cannot be enabled" | P0-001 | 1 h | All 11 questions present with owner, status and source-to-check; capability table has zero `available` rows | Pending | Commit SHA; file diff |
+| P0-006 | 0 | E1 Governance and docs | Docs skeleton | `docs/ARCHITECTURE.md` with C4 context and container diagrams in Mermaid; stubs with headings for RUNBOOK, DEPLOYMENT, TESTING, PROMPTS, UX_GUIDELINES, CHANGELOG | P0-002 | 1 h | Mermaid renders (mermaid-cli lint passes in CI); every §16 deliverable exists as a file | Pending | CI run ID; file listing |
+| P0-007 | 0 | E1 Governance and docs | Threat model | `docs/SECURITY.md` STRIDE v0 covering login, session, tenancy (RLS), secrets, CI supply chain, dev-only test IdP. Each threat maps to a control and a ticket or test | P0-002 | 1.5 h | Every STRIDE category has at least one entry; every High threat names a test ID or ticket | Pending | Commit SHA; review checklist |
+
+### E2. Repository and tooling
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-010 | 0 | E2 Repo and tooling | Monorepo skeleton | Layout per spec §13; pnpm workspace; uv workspace (`apps/api`, `apps/worker`, `apps/mcp-server`); `packages/config/product.json` holding `PRODUCT_NAME = "CreatorIQX"` as the single source for both stacks; `.editorconfig`, `.gitignore`, `.env.example`, `Makefile` (setup, up, down, test, lint, fmt, migrate). Check latest stable version of every dependency at install time and record it in `docs/DEPENDENCIES.md` | P0-001 | 1.5 h | `make setup` succeeds on a clean clone; lockfiles committed; no secret in `.env.example` | Pending | Command log; lockfile SHAs |
+| P0-011 | 0 | E2 Repo and tooling | Python quality gates | Ruff (incl. C901 complexity), mypy strict, pytest with coverage gates (85% domain and application, 70% overall), import-linter contracts: domain imports no framework; no module imports another module's `infrastructure` | P0-010 | 1 h | A deliberate violation of each contract fails locally; the clean tree passes | Pending | Command output for pass and seeded-fail |
+| P0-012 | 0 | E2 Repo and tooling | TS quality gates | TS strict (no `any` rule), ESLint, Prettier, dependency-cruiser rules, Vitest config | P0-080 | 1 h | Seeded `any` and seeded forbidden import both fail; clean tree passes | Pending | Command output |
+| P0-013 | 0 | E2 Repo and tooling | Pre-commit | pre-commit hooks: ruff, prettier, eslint, gitleaks, end-of-file fixes | P0-011 | 0.5 h | Committing a fake secret is blocked locally | Pending | Hook output |
+
+### E3. Local runtime
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-020 | 0 | E3 Local runtime | Data services | Docker Compose: PostgreSQL (16+, latest stable) and Redis with healthchecks and volumes. DB init creates two roles: `creatoriqx_owner` (migrations) and `creatoriqx_app` (runtime, `NOBYPASSRLS`, not owner of tables) | P0-010, Q3 | 1.5 h | `docker compose up` healthy; `creatoriqx_app` cannot `ALTER TABLE` or bypass RLS (test) | Pending | `docker compose ps`; test ID |
+| P0-021 | 0 | E3 Local runtime | App images | Multi-stage Dockerfiles for api, worker, web, mcp-server; non-root users; no dev dependencies in final images | P0-030, P0-080 | 1.5 h | All images build; `docker run ... id -u` is not 0 | Pending | Build log; command output |
+| P0-022 | 0 | E3 Local runtime | One-command setup | `make up` runs web, api, worker, postgres, redis, mcp-server; seed script creates a second demo workspace (for cross-tenant manual checks); README quickstart | P0-020, P0-021, P0-053 | 1 h | Fresh clone to logged-in dashboard following README only, timed under 30 min | Pending | Recorded manual check with timing |
+
+### E4. Backend foundation
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-030 | 0 | E4 Backend foundation | App skeleton | FastAPI app factory; pydantic-settings (env-only config; product name from `packages/config/product.json`); `/api/v1` router; `/healthz`, `/readyz` (checks Postgres and Redis); Prometheus `/metrics` | P0-011, P0-020 | 1 h | `/readyz` returns 503 when Postgres is stopped and 200 when up | Pending | Test IDs |
+| P0-031 | 0 | E4 Backend foundation | Logging and errors | structlog JSON with correlation-ID middleware (propagated to Celery); redaction of `authorization`, `cookie`, `set-cookie`, token-like fields; typed domain error base mapped to RFC 9457 problem+json | P0-030 | 1.5 h | Log of a request carrying a fake bearer token contains no token value; unknown error returns problem+json without stack trace | Pending | Test IDs; sample log line |
+| P0-032 | 0 | E4 Backend foundation | Web protection (API) | Secure headers (nosniff, frame-ancestors none, referrer policy; HSTS only when HTTPS), strict CORS (same origin only), request body size limit | P0-030 | 0.5 h | Header assertions pass; cross-origin request rejected | Pending | Test IDs |
+| P0-033 | 0 | E4 Backend foundation | API contract | Script exports OpenAPI to `packages/api-client/openapi.json`; CI fails on drift | P0-030 | 0.5 h | Changing a route without regenerating fails CI | Pending | CI run ID (seeded fail and pass) |
+
+### E5. Data and tenancy
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-040 | 0 | E5 Data and tenancy | Persistence base | SQLAlchemy 2 async engine and unit of work; UUIDv7 ids; mixins (`created_at`, `updated_at`, `version` for optimistic concurrency, soft-delete helper); Alembic using the owner role; migration up/down test harness | P0-020, P0-030 | 1.5 h | Upgrade, downgrade, upgrade round-trip passes; UUIDs are v7 and time-ordered | Pending | Test IDs; migration log |
+| P0-041 | 0 | E5 Data and tenancy | Identity schema | `users` (global, not tenant), `workspaces`, `memberships` (role enum owner, editor, viewer; unique user plus workspace) | P0-040 | 1 h | Migration round-trip; constraint tests | Pending | Test IDs; migration result |
+| P0-042 | 0 | E5 Data and tenancy | Row-level security | Per-request transaction sets `app.workspace_id` and `app.user_id` with `SET LOCAL`; RLS enabled and FORCED on every tenant table; meta-test queries `pg_class` and `pg_policies` and fails if any table with `workspace_id` lacks a policy | P0-041 | 2 h | With context A, rows of workspace B are invisible for select, update, delete and insert; meta-test passes and fails when a policy is dropped | Pending | Test IDs (pass and seeded fail) |
+| P0-043 | 0 | E5 Data and tenancy | Platform tables | `audit_log` (append-only: runtime role has no UPDATE or DELETE; trigger rejects them), `outbox_events`, `idempotency_keys`, `usage_events`. Owners: audit_log -> `audit`, usage_events -> `telemetry`, outbox_events and idempotency_keys -> `jobs` (see assumption A4) | P0-042 | 1.5 h | UPDATE or DELETE on audit_log fails as runtime role; RLS meta-test still passes | Pending | Test IDs |
+| P0-044 | 0 | E5 Data and tenancy | Generated ERD | Script renders Mermaid ERD from SQLAlchemy metadata into `docs/DATA_MODEL.md`, with table-owner column; CI fails if stale | P0-043 | 1 h | Adding a column without regenerating fails CI | Pending | CI run ID |
+
+### E6. Identity and access
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-050 | 0 | E6 Identity and access | Google OIDC login | Authorization code flow with PKCE, `state`, `nonce`; scopes `openid email profile` only; ID token validation (issuer, audience, expiry, nonce, signature via JWKS); requires `email_verified`; email allow-list `AUTH_ALLOWED_EMAILS`. Library verified against current docs and recorded | P0-030, P0-007 | 2 h | Mocked IdP tests: valid login succeeds; bad state, bad nonce, wrong audience, expired token, unverified email and non-allow-listed email are each rejected | Pending | Test IDs |
+| P0-051 | 0 | E6 Identity and access | Sessions and CSRF | Server-side sessions in Redis (opaque random id); cookie `HttpOnly`, `Secure`, `SameSite=Lax`, `__Host-` prefix where the browser allows on localhost (see OPEN_QUESTIONS); rotation on login; idle and absolute timeouts; logout destroys session; CSRF token required on unsafe methods | P0-050 | 2 h | Session id changes on login; reused old id rejected; POST without CSRF token rejected; expired session rejected | Pending | Test IDs |
+| P0-052 | 0 | E6 Identity and access | Real login check | Owner logs in with a real Google account against the local stack | P0-051, P0-053, Q2 | 0.5 h | Real login reaches the dashboard; audit rows exist | Pending (BLOCKED until Q2 resolved) | Screenshot; audit_log rows |
+| P0-053 | 0 | E6 Identity and access | Workspace bootstrap (reference module) | `workspaces` module built as the reference hexagonal module (domain, application, infrastructure, api). First login creates user, personal workspace and owner membership in one transaction under its own RLS context (id generated app-side, no privileged path); writes audit entries `user.created`, `workspace.created`, `auth.login_succeeded`; writes one outbox event. Repeat login is idempotent | P0-042, P0-043, P0-050 | 1.5 h | Two logins create exactly one workspace; audit and outbox rows present; domain and application coverage at least 85% | Pending | Test IDs; coverage report |
+| P0-054 | 0 | E6 Identity and access | RBAC and tenant isolation | `require_role()` dependency; `GET /api/v1/me`, `GET /api/v1/workspaces/current`; cross-tenant harness that enumerates every route in the OpenAPI document and calls it as a member of another workspace, expecting denial. New routes are covered automatically | P0-053 | 1.5 h | Harness covers 100% of routes; a seeded unprotected route makes it fail | Pending | Test IDs (pass and seeded fail) |
+| P0-055 | 0 | E6 Identity and access | Auth rate limiting | Redis token bucket on login and callback endpoints, per IP and per user | P0-051 | 1 h | Burst beyond limit returns 429 problem+json | Pending | Test IDs |
+
+### E7. Platform primitives (depth rule: interface plus one example)
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-060 | 0 | E7 Platform primitives | Task queue | `TaskQueue` port; Celery adapter (Redis broker); retry with exponential backoff and jitter; one working job (`ops.ping`) that writes a result; worker container; correlation ID carried into the job | P0-030, P0-020 | 1.5 h | Enqueue via port, job completes, result observed; a failing job retries then lands in failed state | Pending | Integration test IDs; worker log |
+| P0-061 | 0 | E7 Platform primitives | Outbox relay | Minimal relay job reads unpublished `outbox_events` with `FOR UPDATE SKIP LOCKED`, dispatches to in-process handlers, marks published; at-least-once semantics documented | P0-060, P0-043 | 1.5 h | Event from P0-053 is dispatched exactly once in the normal case and redelivered after a simulated crash | Pending | Test IDs |
+| P0-062 | 0 | E7 Platform primitives | Telemetry contract | `UsageEvent` schema (name, version, workspace, user, allow-listed properties, timestamp); `TelemetrySink` port; Postgres adapter; emits `auth.login_succeeded`. No dashboards | P0-043 | 1 h | Event persisted; non-allow-listed property dropped | Pending | Test IDs |
+
+### E8. MCP and skills skeleton
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-070 | 0 | E8 MCP skeleton | MCP server scaffold | Official Python MCP SDK (version verified); one read-only tool `get_app_info` (product name, version, readiness); runs in Compose; `skills/README.md` defines the SKILL.md format (no module skills yet). How the MCP server reaches data is decided by ADR when the first real tool is built | P0-030 | 1 h | MCP inspector lists the tool and it returns product name "CreatorIQX" | Pending | Inspector output |
+
+### E9. Frontend foundation
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-080 | 0 | E9 Frontend foundation | App and design tokens | Next.js App Router, TS strict; Tailwind with design tokens as CSS variables (color, 8 px spacing grid, type scale, radius, motion) for light and dark; shadcn/ui init; lucide; product name from shared config; `/api` rewrite to the API so dev runs on a single origin | P0-010 | 1.5 h | Light and dark both render with tokens only (lint rule forbids raw hex in components) | Pending | Screenshot pair; lint output |
+| P0-081 | 0 | E9 Frontend foundation | Generated API client | Client generated from `openapi.json` into `packages/api-client` (generator verified and recorded); TanStack Query provider | P0-033, P0-080 | 1 h | Typed call to `/api/v1/me` compiles; changing the API type breaks the build | Pending | Build output |
+| P0-082 | 0 | E9 Frontend foundation | Web protection (web) and i18n | CSP with per-request nonces via middleware; secure headers; next-intl with English messages; no hard-coded UI strings | P0-080 | 1.5 h | CSP header present with nonce; inline script without nonce blocked (Playwright); string lint passes | Pending | Test IDs; header capture |
+| P0-083 | 0 | E9 Frontend foundation | Design system skeleton | Storybook with tokens page and Button, Input, Card, Skeleton primitives; Vitest and Testing Library; Playwright plus axe harness | P0-080 | 1.5 h | Storybook builds; axe has zero serious or critical findings on the stories | Pending | Storybook build log; axe report |
+
+### E10. Design (design before UI code)
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-090 | 0 | E10 Design | Wireframes | Low-fidelity wireframes for: login (including "email not allowed" and "sign-in cancelled" states), app shell with task-based navigation (only implemented items shown; nothing presented as working that is not), first-login empty dashboard with an honest next-step checklist, loading, error and mobile layouts | P0-001 | 1.5 h | Owner approves in writing | Pending (BLOCKED on owner approval until given) | Wireframe files; approval message recorded in PROGRESS |
+
+### E11. UI screens
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-091 | 0 | E11 UI screens | Login screen | Login page per approved wireframe; Google sign-in button following Google branding guidelines; error states | P0-090 approved, P0-050, P0-081 | 1.5 h | Playwright: happy path and both error states; axe clean; keyboard-only completion | Pending | Test IDs; screenshots |
+| P0-092 | 0 | E11 UI screens | App shell and empty dashboard | Shell with skip link, focus management, theme toggle, account menu with logout; empty dashboard shows workspace name and checklist; skeleton loading; responsive at mobile, tablet, desktop; `prefers-reduced-motion` respected | P0-091, P0-054 | 2 h | Playwright at three viewports; axe zero serious or critical; keyboard-only logout; LCP under 2.5 s locally | Pending | Test IDs; screenshots; Lighthouse report |
+
+### E12. CI and security automation
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-100 | 0 | E12 CI and security | Python CI | GitHub Actions: ruff, mypy, import-linter, pytest with Postgres and Redis service containers, coverage gates, migration round-trip, ERD and OpenAPI drift checks | P0-011, P0-040, Q1 | 1.5 h | Green on `main`; a seeded failure turns it red | Pending | CI run IDs |
+| P0-101 | 0 | E12 CI and security | JS CI | pnpm install with frozen lockfile, ESLint, tsc, Vitest, dependency-cruiser, Storybook build | P0-012, P0-083, P0-100 | 1 h | Green; seeded failure turns it red | Pending | CI run IDs |
+| P0-102 | 0 | E12 CI and security | Security scans | gitleaks (blocking from Phase 0); pip-audit and pnpm audit, Trivy image scan, code scanning per Q1 answer (report-only in Phase 0, blocking from 1A); Dependabot config | P0-100, P0-021 | 1.5 h | All scans run and publish results; gitleaks blocks a seeded fake secret | Pending | CI run IDs; scan reports |
+| P0-103 | 0 | E12 CI and security | End-to-end in CI | Compose stack in CI; Playwright plus axe on login and shell using a test-only OIDC stub that exists only when `APP_ENV=test`; a test proves the stub cannot load in production config | P0-092, P0-021 | 2 h | E2E green; production-config test proves the stub route returns 404 and the module is not importable | Pending | CI run IDs; test IDs |
+
+### E13. Phase gate
+
+| ID | Phase | Epic | Capability | Description | Dependencies | Estimate | Acceptance test | Outcome | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-110 | 0 | E13 Phase gate | Quality scorecard | Run the §17 scorecard for Phase 0. Rows not applicable get a written reason (for example Performance p95 on VPS: N/A, no VPS until 1E). Review STRIDE v0. Update PROGRESS, CHANGELOG `0.1.0`, tag `v0.1.0` | All P0 tickets | 1 h | Every applicable row PASS with evidence; every N/A row has a reason | Pending | Scorecard table in PROGRESS; tag |
+
+---
+
+## Totals and time-box
+
+| Item | Value |
+|---|---|
+| Tickets | 45 |
+| Estimate | about 56 agent-assisted hours |
+| At 4 to 6 focused hours a day | about 10 to 14 working days |
+| Spec time-box (2.5.1) | 4 to 7 working days |
+
+The estimate exceeds the spec's indicative box. Options for the owner, recorded in PROGRESS once chosen:
+
+| Option | Effect | Estimate |
+|---|---|---|
+| A. Keep full scope, re-baseline Phase 0 to 10 to 14 days | Strongest foundation; spec says time-boxes are confirmed in the Phase 0 plan | about 56 h |
+| B. Defer P0-055, P0-061, P0-062, P0-070 to the start of Phase 1A (none are in the Phase 0 "Done when"; P0-055 must land before any hosted exposure in 1E) | Still meets every Phase 0 Done-when line | about 52 h, 9 to 13 days |
+
+Recommendation: **Option B**. It keeps every Done-when item and moves work to the phase that first needs it.
