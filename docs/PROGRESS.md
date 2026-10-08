@@ -7,7 +7,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | Last updated | 2026-10-08 |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation, implementation in progress** (plan approved by owner 2026-10-08) |
-| Last PASS ticket | **P0-007** (all of E1 Governance and docs: P0-001 to P0-007 PASS) |
+| Last PASS ticket | **P0-010** (also PASS: P0-001 to P0-007) |
 | Open BLOCKED items | None |
 | Build environment | **Owner's Windows 11 machine** (`C:\Users\Admin\Desktop\creatoriqx`), driven through Claude Desktop Commander. Verified 2026-10-08: Git 2.56, Docker Desktop 29.8 (WSL2), Python 3.14, uv 0.12.23 (installed, on user PATH), Node 22.23, pnpm 12.5; npm, PyPI and Docker Hub reachable; 16 GB RAM. The earlier cloud workspace is retired (OQ-12, OQ-17) |
 | Repository | `github.com/varunjakkampudi-tech/creatoriqx` (appears public, OQ-09). Pushing to `origin/main` works (OQ-16 resolved 2026-10-08) |
@@ -23,13 +23,13 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-004 | PASS | Commit `060d8b5`; ADRs 0007-0009; section and capability checks passed |
 | P0-006 | PASS | Commit `fe1cb79`; CI run 37774467054: 16/16 deliverables, 4 Mermaid diagrams rendered |
 | P0-007 | PASS | Commit `7ea0c1d`; STRIDE v0, 20 threats, all 6 categories; 0 High threats without a ticket |
+| P0-010 | PASS | Commit `f8b91fc`; clean-clone `dev.py setup` exit 0; lockfiles committed; no secrets in `.env.example` |
 
 ## Owner actions pending
 
 | ID | Action | Unblocks |
 |---|---|---|
-| OQ-15 | Reset the YouTube client secret shared in chat and paste the new one into `.env` (`YOUTUBE_CLIENT_SECRET`) | Phase 1A |
-| — | Create the login-only Google OAuth client (ADR 0004); put its ID and secret in `.env` (`GOOGLE_LOGIN_CLIENT_ID`, `GOOGLE_LOGIN_CLIENT_SECRET`); redirect URI `http://localhost:3000/api/v1/auth/callback` | P0-052 |
+| OQ-15 | YouTube client secret in `.env` still ends in the value shared in chat (checked 2026-10-08 18:20). Add a new secret on the YouTube client, update `YOUTUBE_CLIENT_SECRET`, disable the old one | Phase 1A |
 | OQ-09 | Confirm the repo stays public (keeps CodeQL free) | P0-102 |
 
 ## Decisions made
@@ -46,11 +46,13 @@ Read this file at the start of every session. Update it at the end of every sess
 | 2026-10-08 | Login uses a separate login-only Google client (ADR 0004, closes OQ-14) | Owner |
 | 2026-10-08 | Build moved to the owner's Windows machine; `.env.example` committed, local `.env` created with generated secrets (gitignored) | Owner |
 | 2026-10-08 | Windows has no native `make`: P0-010 uses a cross-platform task runner instead of a Makefile (same one-command setup) | Environment |
+| 2026-10-08 | Login-only Google client created by owner; `.env` login values verified filled (values never printed) | Owner |
+| 2026-10-08 | Python pinned to 3.14 (spec minimum 3.12): uv's managed 3.13 failed to link on this Windows machine; installed 3.14.6 works | Environment |
 | 2026-10-08 | Plan decisions D1 to D11 in `docs/PHASE_0_PLAN.md` accepted with the plan | Owner |
 
 ## Exact next step
 
-**P0-010**: monorepo skeleton (pnpm and uv workspaces, product config, task runner, `docs/DEPENDENCIES.md` with versions checked at install). Then P0-011, P0-013, P0-100. P0-090 (wireframes) can run in parallel. Do not start Phase 1A.
+**P0-011**: Python quality gates (Ruff with C901, mypy strict, pytest with coverage gates, import-linter contracts), then P0-013 (pre-commit) and P0-100 (Python CI). P0-090 (wireframes) can run in parallel. Do not start Phase 1A.
 
 ## Phase 0 scorecard
 
