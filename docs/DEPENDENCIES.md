@@ -28,5 +28,15 @@ Every dependency is checked for its latest stable version **at install time** (s
 | pytest | 9.1.1 | 2026-10-08 | Test runner |
 | pytest-cov | 7.1.0 | 2026-10-08 | Coverage (70% overall via `fail_under`) |
 | import-linter | 2.15 | 2026-10-08 | Architecture contracts (ADR 0001) |
+| pre-commit | 4.6.2 | 2026-10-08 | Git hooks runner |
 
-pre-commit 4.6.2 (latest on 2026-10-08) is added with P0-013.
+## pre-commit hooks (`.pre-commit-config.yaml`)
+
+Pinned with `pre-commit autoupdate` on 2026-10-08.
+
+| Hook repo | Version | Hooks |
+|---|---|---|
+| pre-commit/pre-commit-hooks | v6.0.0 | end-of-file, trailing whitespace, LF line endings, YAML/TOML/JSON syntax, merge conflicts, large files (500 KB), private keys |
+| astral-sh/ruff-pre-commit | v0.16.10 | ruff check --fix, ruff format |
+| gitleaks/gitleaks | v8.30.0 | secret scanning (built locally by pre-commit on first run) |
+| local | (repo Prettier 3.9.9) | Prettier for JSON, YAML, JS, TS, CSS |

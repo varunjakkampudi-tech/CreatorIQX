@@ -5,7 +5,7 @@ Usage:
 
 Commands:
     doctor       Check that required tools are installed at supported versions
-    setup        doctor + create .env from .env.example if missing + install all dependencies
+    setup        doctor + create .env if missing + install dependencies + install git hooks
     check-docs   Verify spec section 16 documentation deliverables exist
     format       Format Python (Ruff) and JS/JSON/YAML (Prettier)
     lint         Ruff lint and format check, mypy strict, import-linter contracts
@@ -98,6 +98,7 @@ def setup() -> None:
         print("Created .env from .env.example. Fill in the empty secrets before running the app.")
     run("uv", "sync", "--all-packages", "--locked")
     run("pnpm", "install", "--frozen-lockfile")
+    run("uv", "run", "pre-commit", "install")
     print("Setup complete.")
 
 

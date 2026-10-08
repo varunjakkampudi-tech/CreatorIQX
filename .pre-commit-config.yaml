@@ -1,0 +1,43 @@
+# CreatorIQX pre-commit hooks (spec §10 Secrets, §12 Style). Installed by `dev.py setup`.
+# Hook versions are pinned; refresh with `uv run pre-commit autoupdate`.
+default_install_hook_types: [pre-commit]
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-yaml
+        exclude: ^pnpm-lock\.yaml$ # pnpm writes a multi-document lockfile; pnpm validates it
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.10
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  # Secret scanning; must match CI (P0-102). Blocks commits that contain secrets.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier (JSON, YAML, JS, TS)
+        entry: pnpm exec prettier --write --ignore-unknown
+        language: system
+        types_or: [json, yaml, javascript, ts, tsx, css]
