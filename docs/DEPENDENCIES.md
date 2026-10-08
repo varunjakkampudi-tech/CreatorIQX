@@ -13,6 +13,13 @@ Every dependency is checked for its latest stable version **at install time** (s
 | pnpm | 12.10.1 | 2026-10-08 | `package.json` `packageManager` | Corepack switches to this exact version |
 | Docker | >= 27 (29.8 installed) | 2026-10-08 | `scripts/dev.py` doctor | Docker Desktop with WSL2 |
 
+## Container images (`infra/compose/docker-compose.yml`)
+
+| Image | Tag | Checked on | Notes |
+|---|---|---|---|
+| postgres | 18-alpine | 2026-10-08 | Spec needs 16+; 18 is the current major. Data volume mounts at `/var/lib/postgresql` (18+ layout) |
+| redis | 8-alpine | 2026-10-08 | Append-only persistence on |
+
 ## JavaScript packages
 
 | Package | Version | Checked on | Scope | Why |

@@ -73,6 +73,8 @@ Ratings: High, Medium, Low (likelihood and impact combined). Every High threat n
 | Local development over `http://localhost` | Browsers treat localhost as a secure context (verify per browser, OQ-10); fallback to local TLS exists | P0-051 |
 | OAuth app in Google "Testing" status | Single user; token expiry handled by reconnect flow | Phase 1A, Phase 5 (verification) |
 | Rate limiting deferred to 1A | Nothing is exposed beyond the developer's machine in Phase 0 | Start of 1A |
+| Local Redis has no password; local Postgres uses trust auth inside the container | Both bind to 127.0.0.1 only (ports 55432, 56379); the container's socket trust is never reachable from outside. Production (1E) requires Redis auth and password or certificate auth for Postgres | Phase 1E |
+| Database passwords are passed to the Postgres container as environment variables | Local development only; visible to anyone who can run `docker inspect` on this machine. Production uses Docker secrets or a secrets manager | Phase 1E |
 
 ## Phase 1A additions (preview)
 

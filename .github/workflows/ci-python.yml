@@ -1,8 +1,8 @@
 name: ci-python
 
 # Same gates as `dev.py lint` and `dev.py test` locally (spec §12, §17).
-# Later tickets add steps here: Postgres and Redis service containers and the
-# migration round-trip (P0-040), ERD drift (P0-044), OpenAPI drift (P0-033).
+# Starts the same Compose services as local development (P0-020).
+# Later tickets add: migration round-trip (P0-040), ERD drift (P0-044), OpenAPI drift (P0-033).
 
 on:
   push:
@@ -40,6 +40,11 @@ jobs:
         run: |
           uv sync --all-packages --locked
           pnpm install --frozen-lockfile
+
+      - name: Start local services (PostgreSQL, Redis) for integration tests
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env -f infra/compose/docker-compose.yml up --detach --wait --wait-timeout 120
 
       - name: Lint (Ruff, format, mypy strict, import-linter, Prettier)
         run: uv run python scripts/dev.py lint

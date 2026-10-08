@@ -40,9 +40,13 @@ python scripts/dev.py <command>     # Windows: py scripts/dev.py <command>
 | `doctor` | Checks tool versions |
 | `setup` | Runs `doctor`, creates `.env` from `.env.example` if missing, installs Python and JS dependencies from the lockfiles |
 | `check-docs` | Verifies the documentation deliverables |
-| `format` | Formats JSON, YAML and JS with Prettier |
+| `format` | Formats Python with Ruff and JSON, YAML and JS with Prettier |
+| `lint` | Ruff, format check, mypy strict, import-linter architecture contracts, Prettier |
+| `test` | pytest with coverage gates; integration tests need `up` first |
+| `up` | Starts PostgreSQL (port 55432) and Redis (port 56379) on localhost and waits until healthy |
+| `down` | Stops them; database data is kept |
 
-More commands (lint, test, up, migrate) arrive with their tickets.
+More commands (migrate, app services) arrive with their tickets.
 
 ## Quickstart
 

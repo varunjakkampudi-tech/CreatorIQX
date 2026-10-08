@@ -10,9 +10,11 @@ Commands:
     format       Format Python (Ruff) and JS/JSON/YAML (Prettier)
     lint         Ruff lint and format check, mypy strict, import-linter contracts
     test         pytest with coverage: 70% overall, 85% domain and application
+    up           Start local services (PostgreSQL, Redis) and wait until healthy
+    down         Stop local services (data volumes are kept)
 
 Standard library only, so it runs before any dependency is installed.
-Further commands (up, down, migrate) are added by the tickets
+Further commands (migrate and app services) are added by the tickets
 that introduce the tools behind them; nothing here is a placeholder.
 """
 
@@ -140,6 +142,28 @@ def test() -> None:
         raise TaskError("Domain and application coverage is below 85%.")
 
 
+COMPOSE_FILE = ROOT / "infra" / "compose" / "docker-compose.yml"
+
+
+def compose(*args: str) -> None:
+    """Run docker compose with the repo's compose file and root .env."""
+    env_file = ROOT / ".env"
+    if not env_file.exists():
+        raise TaskError(".env is missing. Run 'setup' first (it creates one from .env.example).")
+    run("docker", "compose", "--env-file", str(env_file), "-f", str(COMPOSE_FILE), *args)
+
+
+def up() -> None:
+    """Start local services and block until every health check passes."""
+    compose("up", "--detach", "--wait", "--wait-timeout", "120")
+    compose("ps")
+
+
+def down() -> None:
+    """Stop local services; named volumes (database data) are preserved."""
+    compose("down")
+
+
 COMMANDS: dict[str, Callable[[], None]] = {
     "doctor": doctor,
     "setup": setup,
@@ -147,6 +171,8 @@ COMMANDS: dict[str, Callable[[], None]] = {
     "format": format_code,
     "lint": lint,
     "test": test,
+    "up": up,
+    "down": down,
 }
 
 
