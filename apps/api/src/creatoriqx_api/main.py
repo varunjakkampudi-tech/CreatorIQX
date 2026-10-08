@@ -13,7 +13,10 @@ from fastapi.responses import JSONResponse
 from prometheus_client import make_asgi_app
 
 from creatoriqx_api import __version__
+from creatoriqx_api.platform.errors import install_error_handlers
 from creatoriqx_api.platform.health import HealthCheck, PostgresCheck, RedisCheck, run_checks
+from creatoriqx_api.platform.logging import configure_logging
+from creatoriqx_api.platform.middleware import CorrelationMiddleware
 from creatoriqx_api.settings import Settings, get_settings
 
 API_V1_PREFIX = "/api/v1"
@@ -34,6 +37,7 @@ def create_app(
 ) -> FastAPI:
     """Build the app. Tests inject settings and fake checks; production uses defaults."""
     settings = settings or get_settings()
+    configure_logging(settings)
     readiness_checks = list(checks) if checks is not None else default_checks(settings)
 
     app = FastAPI(
@@ -43,6 +47,8 @@ def create_app(
         docs_url=f"{API_V1_PREFIX}/docs" if settings.app_env != "production" else None,
         redoc_url=None,
     )
+    app.add_middleware(CorrelationMiddleware)
+    install_error_handlers(app)
 
     @app.get("/healthz", tags=["health"], summary="Liveness: the process is up")
     async def healthz() -> JSONResponse:
