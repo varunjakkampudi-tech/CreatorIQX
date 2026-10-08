@@ -46,6 +46,14 @@ class TimestampMixin:
     )
 
 
+class CreatedAtMixin:
+    """Server-set creation timestamp only (for append-only / immutable rows)."""
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class VersionMixin:
     """Optimistic-concurrency version counter.
 

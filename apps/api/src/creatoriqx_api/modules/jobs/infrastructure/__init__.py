@@ -1,0 +1,1 @@
+"""Jobs infrastructure: ORM tables."""

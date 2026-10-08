@@ -6,6 +6,9 @@ contexts add their table-module imports here as they are built.
 
 from __future__ import annotations
 
+from creatoriqx_api.modules.audit.infrastructure import tables as _audit
 from creatoriqx_api.modules.identity.infrastructure import tables as _identity
+from creatoriqx_api.modules.jobs.infrastructure import tables as _jobs
+from creatoriqx_api.modules.telemetry.infrastructure import tables as _telemetry
 
-__all__ = ["_identity"]
+__all__ = ["_audit", "_identity", "_jobs", "_telemetry"]
