@@ -14,6 +14,7 @@ Commands:
     down         Stop local services (data volumes are kept)
     api          Run the API on http://127.0.0.1:8000 with auto-reload (needs `up`)
     openapi      Regenerate packages/api-client/openapi.json from the code
+    erd          Regenerate docs/DATA_MODEL.md from the SQLAlchemy metadata
     migrate      Apply database migrations (owner role) to the configured DB
 
 Standard library only, so it runs before any dependency is installed.
@@ -147,6 +148,11 @@ def openapi() -> None:
     run("uv", "run", "python", "scripts/export_openapi.py")
 
 
+def erd() -> None:
+    """Regenerate the committed data-model document from the SQLAlchemy metadata."""
+    run("uv", "run", "python", "scripts/generate_erd.py")
+
+
 def lint() -> None:
     """Every static check from spec section 17 Code quality and Architecture."""
     run("uv", "run", "ruff", "check", ".")
@@ -154,6 +160,7 @@ def lint() -> None:
     run("uv", "run", "mypy")
     run("uv", "run", "lint-imports")
     run("uv", "run", "python", "scripts/export_openapi.py", "--check")
+    run("uv", "run", "python", "scripts/generate_erd.py", "--check")
     run("pnpm", "run", "format:check")
 
 
@@ -225,6 +232,7 @@ COMMANDS: dict[str, Callable[[], None]] = {
     "down": down,
     "api": api,
     "openapi": openapi,
+    "erd": erd,
     "migrate": migrate,
 }
 
