@@ -8,8 +8,8 @@ Read this file at the start of every session. Update it at the end of every sess
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation, implementation in progress** (plan approved by owner 2026-10-08) |
 | Last PASS ticket | **P0-007** (all of E1 Governance and docs: P0-001 to P0-007 PASS) |
-| Open BLOCKED items | **Environment:** npm and PyPI return 403 in the cloud workspace (OQ-17), so code tickets P0-010 onward cannot start here. P0-052 (real login) also needs the owner's computer or a hosted URL (OQ-13) |
-| Build environment | Cloud workspace (owner choice). Native PostgreSQL 16 and Redis 7; Docker daemon runs but image pulls are blocked (OQ-12), so containers run in GitHub Actions |
+| Open BLOCKED items | None |
+| Build environment | **Owner's Windows 11 machine** (`C:\Users\Admin\Desktop\creatoriqx`), driven through Claude Desktop Commander. Verified 2026-10-08: Git 2.56, Docker Desktop 29.8 (WSL2), Python 3.14, uv 0.12.23 (installed, on user PATH), Node 22.23, pnpm 12.5; npm, PyPI and Docker Hub reachable; 16 GB RAM. The earlier cloud workspace is retired (OQ-12, OQ-17) |
 | Repository | `github.com/varunjakkampudi-tech/creatoriqx` (appears public, OQ-09). Pushing to `origin/main` works (OQ-16 resolved 2026-10-08) |
 
 ## Ticket log
@@ -26,8 +26,8 @@ Read this file at the start of every session. Update it at the end of every sess
 
 | ID | Action | Unblocks |
 |---|---|---|
-| OQ-17 | Decide where code work runs: your computer through Claude Code (recommended), or wait for registry access here | P0-010 onward |
-| OQ-15 | Reset the OAuth client secret shared in chat; the new value goes only in a gitignored `.env` | P0-052 |
+| OQ-15 | Reset the YouTube client secret shared in chat and paste the new one into `.env` (`YOUTUBE_CLIENT_SECRET`) | Phase 1A |
+| — | Create the login-only Google OAuth client (ADR 0004); put its ID and secret in `.env` (`GOOGLE_LOGIN_CLIENT_ID`, `GOOGLE_LOGIN_CLIENT_SECRET`); redirect URI `http://localhost:3000/api/v1/auth/callback` | P0-052 |
 | OQ-09 | Confirm the repo stays public (keeps CodeQL free) | P0-102 |
 
 ## Decisions made
@@ -42,11 +42,13 @@ Read this file at the start of every session. Update it at the end of every sess
 | 2026-10-08 | Containers can't be pulled here: dev and tests use native Postgres and Redis; Compose and images run in GitHub Actions (OQ-12) | Environment finding |
 | 2026-10-08 | Time-box Option B applied by default (defer P0-055, P0-061, P0-062, P0-070 to the start of 1A; Phase 0 about 9 to 13 days). Owner may switch to Option A | Plan recommendation, not yet explicitly confirmed |
 | 2026-10-08 | Login uses a separate login-only Google client (ADR 0004, closes OQ-14) | Owner |
+| 2026-10-08 | Build moved to the owner's Windows machine; `.env.example` committed, local `.env` created with generated secrets (gitignored) | Owner |
+| 2026-10-08 | Windows has no native `make`: P0-010 uses a cross-platform task runner instead of a Makefile (same one-command setup) | Environment |
 | 2026-10-08 | Plan decisions D1 to D11 in `docs/PHASE_0_PLAN.md` accepted with the plan | Owner |
 
 ## Exact next step
 
-**P0-090** (wireframes for login, app shell, empty dashboard; autoshorts.ai as UX inspiration only; owner approval required) can proceed here, since it needs no packages. Code tickets start with **P0-010** (monorepo skeleton) as soon as the owner decides where code runs (OQ-17). Do not start Phase 1A.
+**P0-010**: monorepo skeleton (pnpm and uv workspaces, product config, task runner, `docs/DEPENDENCIES.md` with versions checked at install). Then P0-011, P0-013, P0-100. P0-090 (wireframes) can run in parallel. Do not start Phase 1A.
 
 ## Phase 0 scorecard
 
