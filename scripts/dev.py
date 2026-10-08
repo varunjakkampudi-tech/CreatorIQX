@@ -14,6 +14,7 @@ Commands:
     down         Stop local services (data volumes are kept)
     api          Run the API on http://127.0.0.1:8000 with auto-reload (needs `up`)
     openapi      Regenerate packages/api-client/openapi.json from the code
+    migrate      Apply database migrations (owner role) to the configured DB
 
 Standard library only, so it runs before any dependency is installed.
 Further commands (migrate and app services) are added by the tickets
@@ -122,6 +123,25 @@ def format_code() -> None:
     run("pnpm", "run", "format")
 
 
+def _load_env() -> None:
+    """Load KEY=VALUE lines from .env into the environment (does not override)."""
+    env_file = ROOT / ".env"
+    if not env_file.exists():
+        raise TaskError(".env is missing. Run 'setup' first.")
+    for raw in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip())
+
+
+def migrate() -> None:
+    """Apply migrations to the configured database using the owner role."""
+    _load_env()
+    run("uv", "run", "alembic", "-c", "apps/api/alembic.ini", "upgrade", "head")
+
+
 def openapi() -> None:
     """Regenerate the committed OpenAPI document from the code."""
     run("uv", "run", "python", "scripts/export_openapi.py")
@@ -205,6 +225,7 @@ COMMANDS: dict[str, Callable[[], None]] = {
     "down": down,
     "api": api,
     "openapi": openapi,
+    "migrate": migrate,
 }
 
 
