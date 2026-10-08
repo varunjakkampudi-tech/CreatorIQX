@@ -7,10 +7,12 @@ Commands:
     doctor       Check that required tools are installed at supported versions
     setup        doctor + create .env from .env.example if missing + install all dependencies
     check-docs   Verify spec section 16 documentation deliverables exist
-    format       Format JS/JSON/Markdown/YAML with Prettier
+    format       Format Python (Ruff) and JS/JSON/YAML (Prettier)
+    lint         Ruff lint and format check, mypy strict, import-linter contracts
+    test         pytest with coverage: 70% overall, 85% domain and application
 
 Standard library only, so it runs before any dependency is installed.
-Further commands (lint, test, up, down, migrate) are added by the tickets
+Further commands (up, down, migrate) are added by the tickets
 that introduce the tools behind them; nothing here is a placeholder.
 """
 
@@ -109,8 +111,32 @@ def check_docs() -> None:
 
 
 def format_code() -> None:
-    """Format non-Python files with Prettier (Python formatting arrives with P0-011)."""
+    """Format Python with Ruff and everything else Prettier handles."""
+    run("uv", "run", "ruff", "check", "--fix", ".")
+    run("uv", "run", "ruff", "format", ".")
     run("pnpm", "run", "format")
+
+
+def lint() -> None:
+    """Every static check from spec section 17 Code quality and Architecture."""
+    run("uv", "run", "ruff", "check", ".")
+    run("uv", "run", "ruff", "format", "--check", ".")
+    run("uv", "run", "mypy")
+    run("uv", "run", "lint-imports")
+    run("pnpm", "run", "format:check")
+
+
+def test() -> None:
+    """Run the test suite with both coverage gates."""
+    report = ROOT / "coverage.json"
+    run("uv", "run", "pytest", "--cov", "--cov-report=term-missing", f"--cov-report=json:{report}")
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "check_coverage.py"), str(report)],
+        cwd=ROOT,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise TaskError("Domain and application coverage is below 85%.")
 
 
 COMMANDS: dict[str, Callable[[], None]] = {
@@ -118,6 +144,8 @@ COMMANDS: dict[str, Callable[[], None]] = {
     "setup": setup,
     "check-docs": check_docs,
     "format": format_code,
+    "lint": lint,
+    "test": test,
 }
 
 

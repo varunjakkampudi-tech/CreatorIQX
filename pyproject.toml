@@ -15,3 +15,116 @@ members = ["apps/api"]
 
 [tool.uv.sources]
 creatoriqx-api = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "import-linter==2.15",
+    "mypy==2.4.0",
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+    "ruff==0.16.10",
+]
+
+# --- Ruff: lint and format (spec §12, §17: zero warnings, C901 complexity) ---------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["apps/api/src", "apps/api/tests", "scripts", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F",  # pycodestyle, pyflakes
+    "I",            # import order
+    "B",            # bugbear
+    "UP",           # pyupgrade
+    "S",            # bandit security
+    "SIM",          # simplify
+    "RUF",          # ruff-specific
+    "C90",          # mccabe complexity
+    "N",            # naming
+    "ANN",          # type annotations
+    "PT",           # pytest style
+    "TID",          # tidy imports
+    "DTZ",          # timezone-aware datetimes
+    "BLE",          # no blind except
+    "T20",          # no print in app code
+    "ERA",          # no commented-out code
+    "PLE", "PLW",   # pylint errors and warnings
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101"]                          # assert is how pytest checks
+"scripts/**" = ["T201", "S603", "S607"]            # CLI scripts print and run trusted tools
+
+# --- mypy: strict typing (spec §12) ----------------------------------------------
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["apps/api/src", "apps/api/tests", "scripts", "tests"]
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+# --- pytest and coverage (spec §12: 85% domain and application, 70% overall) ------
+[tool.pytest.ini_options]
+testpaths = ["apps/api/tests", "tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
+xfail_strict = true
+
+[tool.coverage.run]
+source = ["creatoriqx_api"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 70
+show_missing = true
+skip_covered = false
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "@overload"]
+
+# --- import-linter: architecture boundaries (ADR 0001, spec §17 Architecture) ------
+[tool.importlinter]
+root_packages = ["creatoriqx_api"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+id = "domain-is-pure"
+name = "Domain layers import no frameworks, infrastructure or api"
+type = "forbidden"
+source_modules = ["creatoriqx_api.modules.*.domain"]
+forbidden_modules = [
+    "fastapi",
+    "starlette",
+    "sqlalchemy",
+    "alembic",
+    "celery",
+    "redis",
+    "pydantic_settings",
+    "httpx",
+    "structlog",
+    "creatoriqx_api.modules.*.application",
+    "creatoriqx_api.modules.*.infrastructure",
+    "creatoriqx_api.modules.*.api",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+id = "module-layers"
+name = "Within a module: api and infrastructure sit above application, which sits above domain"
+type = "layers"
+containers = ["creatoriqx_api.modules.*"]
+layers = ["(api) | (infrastructure)", "(application)", "(domain)"]  # parentheses: layer may be absent
+exhaustive = false
+
+[[tool.importlinter.contracts]]
+id = "no-foreign-internals"
+name = "No layer imports any module's infrastructure or api except through the composition root"
+type = "forbidden"
+source_modules = [
+    "creatoriqx_api.modules.*.domain",
+    "creatoriqx_api.modules.*.application",
+    "creatoriqx_api.modules.*.api",
+]
+forbidden_modules = ["creatoriqx_api.modules.*.infrastructure"]
+allow_indirect_imports = true

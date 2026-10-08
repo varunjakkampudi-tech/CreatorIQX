@@ -19,6 +19,14 @@ Every dependency is checked for its latest stable version **at install time** (s
 |---|---|---|---|---|
 | prettier | 3.9.9 (exact) | 2026-10-08 | root dev | Formatter; exact pin so formatting never shifts between machines |
 
-## Python packages
+## Python packages (dev group, root `pyproject.toml`)
 
-None yet. Quality tooling (Ruff 0.16.10, mypy 2.4.0, pytest 9.1.1, pytest-cov 7.1.0, import-linter 2.15, pre-commit 4.6.2 were the latest on 2026-10-08) is added with P0-011 and P0-013, re-checked at that time.
+| Package | Version | Checked on | Why |
+|---|---|---|---|
+| ruff | 0.16.10 | 2026-10-08 | Lint (incl. C901 complexity 10) and format |
+| mypy | 2.4.0 | 2026-10-08 | Strict type checking |
+| pytest | 9.1.1 | 2026-10-08 | Test runner |
+| pytest-cov | 7.1.0 | 2026-10-08 | Coverage (70% overall via `fail_under`) |
+| import-linter | 2.15 | 2026-10-08 | Architecture contracts (ADR 0001) |
+
+pre-commit 4.6.2 (latest on 2026-10-08) is added with P0-013.
