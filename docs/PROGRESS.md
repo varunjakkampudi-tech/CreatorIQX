@@ -7,7 +7,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | Last updated | 2026-10-08 |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation, implementation in progress** (plan approved by owner 2026-10-08) |
-| Last PASS ticket | **P0-100** (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013) |
+| Last PASS ticket | **P0-020** (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-100) |
 | Open BLOCKED items | None |
 | Build environment | **Owner's Windows 11 machine** (`C:\Users\Admin\Desktop\creatoriqx`), driven through Claude Desktop Commander. Verified 2026-10-08: Git 2.56, Docker Desktop 29.8 (WSL2), Python 3.14, uv 0.12.23 (installed, on user PATH), Node 22.23, pnpm 12.5; npm, PyPI and Docker Hub reachable; 16 GB RAM. The earlier cloud workspace is retired (OQ-12, OQ-17) |
 | Repository | `github.com/varunjakkampudi-tech/CreatorIQX` (renamed to `CreatorIQX` by the owner on 2026-10-08; remote updated). Appears public (OQ-09). Pushing works |
@@ -27,6 +27,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-011 | PASS | Commit `2157f1d`; every gate proven with a seeded violation; clean tree lint exit 0, tests pass, 100% coverage |
 | P0-013 | PASS | Commit `76320d0`; 13 hooks pass; fake token blocked by gitleaks |
 | P0-100 | PASS | CI green on main (run 37782628775); seeded failing test turned run 37782770458 red at the test step |
+| P0-020 | PASS | Postgres 18 and Redis 8 healthy; 7 role and RLS integration tests pass locally and in CI run 37784481410; seeded BYPASSRLS made 5 fail |
 
 ## Owner actions pending
 
@@ -53,11 +54,13 @@ Read this file at the start of every session. Update it at the end of every sess
 | 2026-10-08 | YouTube client secret rotated by owner (OQ-15 closed); owner to disable the old secret in Google Cloud | Owner |
 | 2026-10-08 | CI also runs on `ci/**` branches so CI changes can be verified without touching main | P0-100 |
 | 2026-10-08 | Ticket outcomes are recorded with `scripts/record_outcome.py` (matches rows by ticket ID; refuses a PASS without evidence) | Tooling |
+| 2026-10-08 | Local services use host ports 55432 (Postgres) and 56379 (Redis), bound to 127.0.0.1, because the owner's machine already runs a native Postgres on 5432 and a WSL service on 6379 | Environment |
+| 2026-10-08 | Integration tests need `dev.py up`; they fail with a clear message rather than skip, so missing services are never hidden | P0-020 |
 | 2026-10-08 | Plan decisions D1 to D11 in `docs/PHASE_0_PLAN.md` accepted with the plan | Owner |
 
 ## Exact next step
 
-**P0-020** (Docker Compose: PostgreSQL and Redis with two DB roles), then **P0-030 to P0-033** (FastAPI skeleton, logging and errors, security headers, OpenAPI drift). **P0-090** (wireframes, owner approval) can run in parallel. Do not start Phase 1A.
+**P0-030** (FastAPI app skeleton: settings from env, `/healthz`, `/readyz` checking Postgres and Redis, Prometheus `/metrics`), then P0-031 (logging, correlation IDs, problem+json), P0-032 (security headers), P0-033 (OpenAPI drift). **P0-090** (wireframes, owner approval) can run in parallel. Do not start Phase 1A.
 
 ## Phase 0 scorecard
 
