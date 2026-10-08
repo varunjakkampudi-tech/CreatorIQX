@@ -75,6 +75,13 @@ async def _add_workspace(conn: asyncpg.Connection, name: str) -> uuid.UUID:
 async def _add_membership(
     conn: asyncpg.Connection, user_id: uuid.UUID, workspace_id: uuid.UUID, role: str
 ) -> None:
+    # memberships has forced RLS (P0-042): set the tenant context first so the
+    # WITH CHECK policy accepts the row, then the schema constraints apply.
+    await conn.execute(
+        "SELECT set_config('app.workspace_id', $1, true), set_config('app.user_id', $2, true)",
+        str(workspace_id),
+        str(user_id),
+    )
     await conn.execute(
         "INSERT INTO memberships (id, user_id, workspace_id, role) VALUES ($1, $2, $3, $4::role)",
         uuid.uuid4(),
