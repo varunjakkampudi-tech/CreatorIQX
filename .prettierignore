@@ -1,0 +1,12 @@
+# Frozen spec and hand-written Markdown are not reformatted
+# (Prettier would realign every table and churn diffs).
+*.md
+
+# Lockfiles and generated output
+pnpm-lock.yaml
+uv.lock
+node_modules/
+.venv/
+.next/
+coverage/
+packages/api-client/openapi.json

@@ -1,0 +1,13 @@
+{
+  "name": "@creatoriqx/config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared product configuration: the single source of the product name for every app.",
+  "type": "module",
+  "exports": {
+    "./product.json": "./product.json"
+  },
+  "files": [
+    "product.json"
+  ]
+}
