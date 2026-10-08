@@ -1,19 +1,27 @@
-"""Migration round-trip against the real creatoriqx_test database (P0-040).
+"""Migration round-trip and model/migration drift check (P0-040, P0-041).
 
-Proves ``upgrade -> downgrade -> upgrade`` works. Needs ``py scripts/dev.py up``.
+Runs against the real creatoriqx_test database. Needs ``py scripts/dev.py up``.
 """
 
 from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import asyncpg
 import pytest
 from alembic import command
+from alembic.autogenerate import compare_metadata
 from alembic.config import Config
+from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from dotenv import dotenv_values
+from sqlalchemy import Connection
+from sqlalchemy.ext.asyncio import create_async_engine
+
+import creatoriqx_api.tables  # noqa: F401  # registers models on Base.metadata
+from creatoriqx_api.platform.db import Base
 
 pytestmark = pytest.mark.integration
 
@@ -30,6 +38,10 @@ def _owner_test_url() -> str:
     return f"{base}/creatoriqx_test"
 
 
+def _head_revision() -> str:
+    return cast("str", ScriptDirectory.from_config(Config(str(ALEMBIC_INI))).get_current_head())
+
+
 async def _current_revision(url: str) -> str | None:
     dsn = url.replace("postgresql+asyncpg://", "postgresql://", 1)
     connection = await asyncpg.connect(dsn)
@@ -40,16 +52,37 @@ async def _current_revision(url: str) -> str | None:
         await connection.close()
 
 
+async def _schema_diffs(url: str) -> list[Any]:
+    engine = create_async_engine(url)
+
+    def _compare(sync_connection: Connection) -> list[Any]:
+        context = MigrationContext.configure(sync_connection)
+        return list(compare_metadata(context, Base.metadata))
+
+    async with engine.connect() as connection:
+        diffs = await connection.run_sync(_compare)
+    await engine.dispose()
+    return diffs
+
+
 def test_migration_roundtrip(monkeypatch: pytest.MonkeyPatch) -> None:
     url = _owner_test_url()
     monkeypatch.setenv("ALEMBIC_DATABASE_URL", url)
     config = Config(str(ALEMBIC_INI))
+    head = _head_revision()
 
     command.upgrade(config, "head")
-    assert asyncio.run(_current_revision(url)) == "0001"
+    assert asyncio.run(_current_revision(url)) == head
 
     command.downgrade(config, "base")
     assert asyncio.run(_current_revision(url)) is None
 
     command.upgrade(config, "head")
-    assert asyncio.run(_current_revision(url)) == "0001"
+    assert asyncio.run(_current_revision(url)) == head
+
+
+def test_migrations_match_the_models(monkeypatch: pytest.MonkeyPatch) -> None:
+    url = _owner_test_url()
+    monkeypatch.setenv("ALEMBIC_DATABASE_URL", url)
+    command.upgrade(Config(str(ALEMBIC_INI)), "head")
+    assert asyncio.run(_schema_diffs(url)) == []  # models and migrations agree
