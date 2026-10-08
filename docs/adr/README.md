@@ -7,7 +7,7 @@ Every significant decision gets an ADR (spec §0.4). Copy [`0000-template.md`](0
 | [0001](0001-modular-monolith-hexagonal.md) | Build a modular monolith with hexagonal module boundaries | Accepted | 2026-10-08 |
 | [0002](0002-postgresql-rls-tenancy.md) | Isolate tenants with PostgreSQL row-level security | Accepted | 2026-10-08 |
 | [0003](0003-celery-redis-behind-taskqueue.md) | Run background work on Celery and Redis behind a TaskQueue port | Accepted | 2026-10-08 |
-| 0004 | OIDC login separate from the YouTube OAuth connection | Planned (P0-003; waits on owner decision OQ-14) | — |
+| [0004](0004-oidc-login-separate-from-youtube-oauth.md) | Separate Google OIDC login from the YouTube OAuth connection | Accepted | 2026-10-08 |
 | [0005](0005-llmprovider-mcp-bridge-capped-api.md) | Put all runtime AI behind an LLMProvider port, MCP bridge in v1 | Accepted | 2026-10-08 |
 | [0006](0006-versioned-artifacts-immutable-snapshots.md) | Version artifacts independently and publish only immutable snapshots | Accepted | 2026-10-08 |
 | [0007](0007-youtube-capability-model-manual-upload.md) | Gate every YouTube write behind a verified capability; default to manual Private upload | Accepted | 2026-10-08 |
