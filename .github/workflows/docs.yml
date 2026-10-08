@@ -1,0 +1,44 @@
+name: docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Deliverables and Mermaid
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check spec section 16 deliverables and extract Mermaid blocks
+        run: python scripts/check_docs.py --extract-mermaid "$RUNNER_TEMP/mermaid"
+
+      - name: Render every Mermaid block (fails on any syntax error)
+        run: |
+          echo '{"args":["--no-sandbox"]}' > "$RUNNER_TEMP/puppeteer.json"
+          shopt -s nullglob
+          files=("$RUNNER_TEMP"/mermaid/*.mmd)
+          if [ ${#files[@]} -eq 0 ]; then echo "No Mermaid blocks found"; exit 1; fi
+          for f in "${files[@]}"; do
+            echo "Rendering $(basename "$f")"
+            npx --yes @mermaid-js/mermaid-cli@11 -p "$RUNNER_TEMP/puppeteer.json" -i "$f" -o "${f%.mmd}.svg"
+          done
+          echo "Rendered ${#files[@]} Mermaid diagram(s)."
