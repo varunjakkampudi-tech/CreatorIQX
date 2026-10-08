@@ -12,6 +12,7 @@ Commands:
     test         pytest with coverage: 70% overall, 85% domain and application
     up           Start local services (PostgreSQL, Redis) and wait until healthy
     down         Stop local services (data volumes are kept)
+    api          Run the API on http://127.0.0.1:8000 with auto-reload (needs `up`)
 
 Standard library only, so it runs before any dependency is installed.
 Further commands (migrate and app services) are added by the tickets
@@ -164,6 +165,28 @@ def down() -> None:
     compose("down")
 
 
+def api() -> None:
+    """Run the API locally with reload; settings come from the root .env."""
+    if not (ROOT / ".env").exists():
+        raise TaskError(".env is missing. Run 'setup' first.")
+    run(
+        "uv",
+        "run",
+        "uvicorn",
+        "creatoriqx_api.main:create_app",
+        "--factory",
+        "--env-file",
+        str(ROOT / ".env"),
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000",
+        "--reload",
+        "--reload-dir",
+        str(ROOT / "apps" / "api" / "src"),
+    )
+
+
 COMMANDS: dict[str, Callable[[], None]] = {
     "doctor": doctor,
     "setup": setup,
@@ -173,6 +196,7 @@ COMMANDS: dict[str, Callable[[], None]] = {
     "test": test,
     "up": up,
     "down": down,
+    "api": api,
 }
 
 

@@ -37,6 +37,22 @@ Every dependency is checked for its latest stable version **at install time** (s
 | import-linter | 2.15 | 2026-10-08 | Architecture contracts (ADR 0001) |
 | pre-commit | 4.6.2 | 2026-10-08 | Git hooks runner |
 
+## Python packages (API runtime, `apps/api/pyproject.toml`)
+
+| Package | Version | Checked on | Why |
+|---|---|---|---|
+| fastapi | 0.143.0 | 2026-10-08 | Web framework |
+| uvicorn[standard] | 0.54.0 | 2026-10-08 | ASGI server |
+| pydantic | 2.13.5 | 2026-10-08 | Validation |
+| pydantic-settings | 2.15.0 | 2026-10-08 | Environment settings |
+| prometheus-client | 0.26.0 | 2026-10-08 | `/metrics` |
+| asyncpg | 0.32.0 | 2026-10-08 | PostgreSQL driver (readiness now, SQLAlchemy from P0-040) |
+| redis | 8.1.0 | 2026-10-08 | Redis client |
+
+Dev additions on 2026-10-08: httpx2 2.13.1 (Starlette's test client now recommends it over httpx, which emits a deprecation warning), asyncpg-stubs 0.32.0 (types for mypy strict).
+
+Local URLs use `127.0.0.1`, not `localhost`: on Windows, `localhost` tries IPv6 `::1` first and a refused IPv6 connection takes about 2 seconds to fail, which exceeded the 2 second readiness timeout (found by the P0-030 integration test).
+
 ## pre-commit hooks (`.pre-commit-config.yaml`)
 
 Pinned with `pre-commit autoupdate` on 2026-10-08.

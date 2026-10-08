@@ -45,6 +45,7 @@ python scripts/dev.py <command>     # Windows: py scripts/dev.py <command>
 | `test` | pytest with coverage gates; integration tests need `up` first |
 | `up` | Starts PostgreSQL (port 55432) and Redis (port 56379) on localhost and waits until healthy |
 | `down` | Stops them; database data is kept |
+| `api` | Runs the API at http://127.0.0.1:8000 with reload. Health: `/healthz`, `/readyz`; metrics: `/metrics`; docs: `/api/v1/docs` |
 
 More commands (migrate, app services) arrive with their tickets.
 

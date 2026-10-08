@@ -16,6 +16,7 @@ How quality is checked locally and in CI (spec §12, §17). Run everything from 
 | Architecture | Domain imports no frameworks; module layers api/infrastructure > application > domain; no layer imports any module's infrastructure | `[tool.importlinter]` (ADR 0001) |
 | Coverage, overall | 70% | `[tool.coverage.report] fail_under` |
 | Coverage, domain and application | 85% across those files | `scripts/check_coverage.py` |
+| Warnings | Any warning (including deprecations) fails the suite | `[tool.pytest.ini_options] filterwarnings` |
 
 ## Test layout
 

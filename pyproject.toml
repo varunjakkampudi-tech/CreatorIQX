@@ -18,6 +18,8 @@ creatoriqx-api = { workspace = true }
 
 [dependency-groups]
 dev = [
+    "asyncpg-stubs==0.32.0",
+    "httpx2==2.13.1",
     "import-linter==2.15",
     "mypy==2.4.0",
     "pre-commit==4.6.2",
@@ -75,6 +77,7 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 testpaths = ["apps/api/tests", "tests"]
 addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
 xfail_strict = true
+filterwarnings = ["error"]  # deprecations fail the suite so they are fixed early
 markers = ["integration: needs local services running (py scripts/dev.py up)"]
 
 [tool.coverage.run]
