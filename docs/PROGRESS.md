@@ -21,6 +21,8 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-002 | PASS | Commit `0846bc0`; ADR template, index, 0001-0003; section check passed |
 | P0-003 | PASS | Commits `060d8b5`, `5a88fc0`; ADRs 0004-0006 |
 | P0-004 | PASS | Commit `060d8b5`; ADRs 0007-0009; section and capability checks passed |
+| P0-006 | PASS | Commit `fe1cb79`; CI run 37774467054: 16/16 deliverables, 4 Mermaid diagrams rendered |
+| P0-007 | PASS | Commit `7ea0c1d`; STRIDE v0, 20 threats, all 6 categories; 0 High threats without a ticket |
 
 ## Owner actions pending
 
