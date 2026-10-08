@@ -4,13 +4,13 @@ Read this file at the start of every session. Update it at the end of every sess
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-10-08 |
+| Last updated | 2026-10-09 |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation, implementation in progress** (plan approved by owner 2026-10-08) |
-| Last PASS ticket | **P0-033** — E4 Backend foundation complete (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-020, P0-030, P0-031, P0-032, P0-100) |
+| Last PASS ticket | **P0-043** — E5 Data and tenancy, platform tables (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-020, P0-030 to P0-033, P0-040 to P0-042, P0-100) |
 | Open BLOCKED items | None |
-| Build environment | **Owner's Windows 11 machine** (`C:\Users\Admin\Desktop\creatoriqx`), driven through Claude Desktop Commander. Verified 2026-10-08: Git 2.56, Docker Desktop 29.8 (WSL2), Python 3.14, uv 0.12.23 (installed, on user PATH), Node 22.23, pnpm 12.5; npm, PyPI and Docker Hub reachable; 16 GB RAM. The earlier cloud workspace is retired (OQ-12, OQ-17) |
-| Repository | `github.com/varunjakkampudi-tech/CreatorIQX` (renamed to `CreatorIQX` by the owner on 2026-10-08; remote updated). Appears public (OQ-09). Pushing works |
+| Build environment | **Owner's Windows 11 machine** (`C:\Users\Admin\Desktop\creatoriqx`), driven through Claude Desktop Commander. Git 2.56, Docker Desktop 29.8 (WSL2), Python 3.14.6, uv 0.12.23, Node 22.23, pnpm 12.x. Postgres and Redis run in Docker Compose on 127.0.0.1:55432 / 56379 |
+| Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works |
 
 ## Ticket log
 
@@ -27,11 +27,15 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-011 | PASS | Commit `2157f1d`; every gate proven with a seeded violation; clean tree lint exit 0, tests pass, 100% coverage |
 | P0-013 | PASS | Commit `76320d0`; 13 hooks pass; fake token blocked by gitleaks |
 | P0-100 | PASS | CI green on main (run 37782628775); seeded failing test turned run 37782770458 red at the test step |
-| P0-020 | PASS | Postgres 18 and Redis 8 healthy; 7 role and RLS integration tests pass locally and in CI run 37784481410; seeded BYPASSRLS made 5 fail |
-| P0-030 | PASS | Commit `299fb39`; app factory with /healthz, /readyz (Postgres+Redis, 503 on failure, no detail leak), /metrics, versioned OpenAPI; 51 tests incl. integration, 95% coverage, lint clean |
-| P0-031 | PASS | Commit `d8140ba`; structlog JSON logging with key+bearer redaction; CorrelationMiddleware (X-Request-ID, no header/body logging); DomainError to RFC 9457 problem+json; 500 leaks no detail/stack |
-| P0-032 | PASS | Commit `4bf71d9`; security headers incl. CSP and scheme-gated HSTS; CORS limited to the configured origin; body-size limit returns 413 |
-| P0-033 | PASS | Commit `6f0930d`; deterministic OpenAPI export with --check drift guard wired into lint and CI |
+| P0-020 | PASS | Postgres 18 and Redis 8 healthy; 7 role and RLS integration tests pass; seeded BYPASSRLS made 5 fail |
+| P0-030 | PASS | Commit `299fb39`; app factory with /healthz, /readyz, /metrics, versioned OpenAPI |
+| P0-031 | PASS | Commit `d8140ba`; structlog JSON logging with redaction; DomainError to RFC 9457 problem+json |
+| P0-032 | PASS | Commit `4bf71d9`; security headers, CORS limited to configured origin, 413 body-size limit |
+| P0-033 | PASS | Commit `6f0930d`; deterministic OpenAPI export with `--check` drift guard in CI |
+| P0-040 | PASS | Commit `9a76336`; SQLAlchemy 2 async base, UUIDv7 ids, mixins, Alembic (owner role); migration round-trip passes; 85 tests, 88.6% coverage |
+| P0-041 | PASS | Commit `612264b`; users/workspaces/memberships schema + migration 0002; round-trip and drift checks pass; 93 tests, 89% coverage |
+| P0-042 | PASS | Commit `4914284`; forced RLS + `set_tenant_context`; meta-test verifies every `workspace_id` table; cross-context isolation proven; 96 tests, 92% coverage |
+| P0-043 | PASS | Commit `615eedd`; migration 0004 (`audit_log`, `usage_events`, `outbox_events`, `idempotency_keys`); append-only proven at the privilege layer and the trigger layer; RLS isolation proven; 101 tests, 93% coverage |
 
 ## Owner actions pending
 
@@ -46,25 +50,16 @@ Read this file at the start of every session. Update it at the end of every sess
 | 2026-10-08 | Product working name is **CreatorIQX**, held as a single config constant in `packages/config/product.json` | Owner |
 | 2026-10-08 | Spec 2.5.1 frozen; architecture changes only via ADR plus owner approval | Spec, owner |
 | 2026-10-08 | Phase 0 plan and backlog approved (13 epics, 45 tickets) | Owner |
-| 2026-10-08 | Agent kickoff prompt adopted (`docs/AGENT_KICKOFF.md`): autoshorts.ai and similar tools as UX inspiration only; no copying; guardrails win; CreatorIQX should feel like a creator operating system, not an admin dashboard | Owner |
-| 2026-10-08 | Build runs in the cloud workspace for now | Owner |
-| 2026-10-08 | Containers can't be pulled here: dev and tests use native Postgres and Redis; Compose and images run in GitHub Actions (OQ-12) | Environment finding |
-| 2026-10-08 | Time-box Option B applied by default (defer P0-055, P0-061, P0-062, P0-070 to the start of 1A; Phase 0 about 9 to 13 days). Owner may switch to Option A | Plan recommendation, not yet explicitly confirmed |
+| 2026-10-08 | Time-box Option B applied by default (defer P0-055, P0-061, P0-062, P0-070 to the start of 1A). Owner may switch to Option A | Plan recommendation |
 | 2026-10-08 | Login uses a separate login-only Google client (ADR 0004, closes OQ-14) | Owner |
-| 2026-10-08 | Build moved to the owner's Windows machine; `.env.example` committed, local `.env` created with generated secrets (gitignored) | Owner |
-| 2026-10-08 | Windows has no native `make`: P0-010 uses a cross-platform task runner instead of a Makefile (same one-command setup) | Environment |
-| 2026-10-08 | Login-only Google client created by owner; `.env` login values verified filled (values never printed) | Owner |
-| 2026-10-08 | Python pinned to 3.14 (spec minimum 3.12): uv's managed 3.13 failed to link on this Windows machine; installed 3.14.6 works | Environment |
-| 2026-10-08 | YouTube client secret rotated by owner (OQ-15 closed); owner to disable the old secret in Google Cloud | Owner |
-| 2026-10-08 | CI also runs on `ci/**` branches so CI changes can be verified without touching main | P0-100 |
-| 2026-10-08 | Ticket outcomes are recorded with `scripts/record_outcome.py` (matches rows by ticket ID; refuses a PASS without evidence) | Tooling |
-| 2026-10-08 | Local services use host ports 55432 (Postgres) and 56379 (Redis), bound to 127.0.0.1, because the owner's machine already runs a native Postgres on 5432 and a WSL service on 6379 | Environment |
-| 2026-10-08 | Integration tests need `dev.py up`; they fail with a clear message rather than skip, so missing services are never hidden | P0-020 |
-| 2026-10-08 | Plan decisions D1 to D11 in `docs/PHASE_0_PLAN.md` accepted with the plan | Owner |
+| 2026-10-08 | Build runs on the owner's Windows machine; Python pinned to 3.14 (uv's managed 3.13 failed to link on this machine) | Environment |
+| 2026-10-08 | YouTube client secret rotated by owner (OQ-15 closed) | Owner |
+| 2026-10-09 | `idempotency_keys` is tenant-scoped with forced RLS (unique on workspace_id+key); `outbox_events` has no `workspace_id` and stays outside RLS, since the relay worker must read unpublished rows across every tenant | Plan detail decided while building P0-043 |
+| 2026-10-09 | `audit_log` append-only is enforced in two independent layers: RLS itself (no UPDATE/DELETE policy = default deny) and a trigger that blocks UPDATE/DELETE for every role including the owner, as a backstop if a policy is ever added | Plan detail decided while building P0-043 |
 
 ## Exact next step
 
-**E5 Data and tenancy.** **P0-040** (SQLAlchemy 2 async base, UUIDv7 ids, mixins, Alembic with the owner role, migration up/down test harness), then P0-041 (identity schema), **P0-042** (per-request RLS context plus the meta-test that every tenant table has a policy), P0-043 (platform tables), P0-044 (generated ERD). **P0-090** wireframes remain open for the owner's approval. Do not start Phase 1A.
+**P0-044** (generated ERD: Mermaid from SQLAlchemy metadata into `docs/DATA_MODEL.md`, with a table-owner column, CI fails on drift) — the last ticket in E5 Data and tenancy. Then **E6 Identity and access** starting with **P0-050** (Google OIDC login). **P0-090** wireframes remain open for the owner's written approval before any UI code (E10/E11). Do not start Phase 1A.
 
 ## Phase 0 scorecard
 
