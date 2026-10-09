@@ -282,10 +282,10 @@ is to add a token.
 
 ```mermaid
 flowchart LR
-    comp["Component className=\"bg-surface\""] --> theme["@theme: --color-surface: var(--surface)"]
-    theme --> root[":root { --surface: #fff }"]
-    theme --> dark["prefers-color-scheme: dark or data-theme=dark { --surface: #0b1220 }"]
-    lint["eslint no-restricted-syntax"] -. blocks .-> hex["className=\"bg-[#4f46e5]\""]
+    comp["Component: className bg-surface"] --> theme["theme token: color-surface maps to var surface"]
+    theme --> root["root: surface is a light hex value"]
+    theme --> dark["dark mode or data-theme dark: surface is a dark hex value"]
+    lint["eslint no-restricted-syntax"] -. blocks .-> hex["A raw hex literal in a className"]
 ```
 
 `cn()` (`src/lib/utils.ts`, clsx + tailwind-merge) and `components.json` are
