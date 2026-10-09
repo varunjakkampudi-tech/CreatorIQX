@@ -1,0 +1,71 @@
+name: zz-gate-report
+
+# Temporary: this sandbox has no npm registry access, so pnpm-lock.yaml
+# can't be generated locally. This workflow runs the install in a networked
+# environment and posts the result (including the resolved lockfile) as a
+# PR comment, since Actions log blobs are not reachable from here either.
+# Deleted before this PR merges.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install (generates the lockfile) and report
+        id: run
+        run: |
+          {
+            echo "## Gate report for ${{ github.sha }}"
+            echo
+            echo "### pnpm install --no-frozen-lockfile"
+            echo '```'
+            corepack --version 2>&1 || true
+            node --version
+            pnpm install --no-frozen-lockfile 2>&1 | tail -c 60000
+            echo '```'
+            echo
+            echo "### Lockfile diff"
+            echo '```diff'
+            git diff -- pnpm-lock.yaml | tail -c 60000
+            echo '```'
+            echo
+            echo "### Lint / typecheck / build (apps/web)"
+            echo '```'
+            (pnpm run format:check 2>&1; echo "format:check exit=$?") | tail -c 20000
+            (pnpm --filter @creatoriqx/web run lint 2>&1; echo "lint exit=$?") | tail -c 20000
+            (pnpm --filter @creatoriqx/web run typecheck 2>&1; echo "typecheck exit=$?") | tail -c 20000
+            (pnpm --filter @creatoriqx/web run build 2>&1; echo "build exit=$?") | tail -c 20000
+            echo '```'
+          } > "$RUNNER_TEMP/report.md"
+          wc -c "$RUNNER_TEMP/report.md"
+
+      - name: Post report as a PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/report.md"
+
+      - name: Upload the resolved lockfile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-lock
+          path: pnpm-lock.yaml
+          retention-days: 7
