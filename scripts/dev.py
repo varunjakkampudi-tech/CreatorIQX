@@ -16,6 +16,10 @@ Commands:
     openapi      Regenerate packages/api-client/openapi.json from the code
     erd          Regenerate docs/DATA_MODEL.md from the SQLAlchemy metadata
     migrate      Apply database migrations (owner role) to the configured DB
+    up-full      One-command setup (P0-022): postgres, redis, api, worker, web as
+                 containers (profile "full"), then `migrate` and `seed`
+    down-full    Stop the full containerized stack (data volumes are kept)
+    seed         Create the second demo workspace used for manual cross-tenant checks
 
 Standard library only, so it runs before any dependency is installed.
 Further commands (migrate and app services) are added by the tickets
@@ -199,6 +203,28 @@ def down() -> None:
     compose("down")
 
 
+def up_full() -> None:
+    """One-command setup (P0-022): the full containerized stack, migrated and seeded.
+
+    mcp-server is intentionally not part of this: it is P0-070's job, deferred
+    to the start of Phase 1A (same scope note as P0-021's app images).
+    """
+    compose("--profile", "full", "up", "--detach", "--build", "--wait", "--wait-timeout", "180")
+    compose("--profile", "full", "ps")
+    migrate()
+    seed()
+
+
+def down_full() -> None:
+    """Stop the full containerized stack; named volumes (database data) are preserved."""
+    compose("--profile", "full", "down")
+
+
+def seed() -> None:
+    """Create the second demo workspace used for manual cross-tenant checks."""
+    run("uv", "run", "python", str(ROOT / "scripts" / "seed_demo_workspace.py"))
+
+
 def api() -> None:
     """Run the API locally with reload; settings come from the root .env."""
     if not (ROOT / ".env").exists():
@@ -230,6 +256,9 @@ COMMANDS: dict[str, Callable[[], None]] = {
     "test": test,
     "up": up,
     "down": down,
+    "up-full": up_full,
+    "down-full": down_full,
+    "seed": seed,
     "api": api,
     "openapi": openapi,
     "erd": erd,

@@ -83,3 +83,23 @@ def test_product_config_without_name_is_an_error(env: pytest.MonkeyPatch, tmp_pa
     env.setenv("PRODUCT_CONFIG_PATH", str(config))
     with pytest.raises(ValueError, match="productName missing"):
         _ = Settings().product_name  # type: ignore[call-arg]
+
+
+@pytest.mark.usefixtures("env")
+def test_google_login_env_vars_populate_oidc_settings(env: pytest.MonkeyPatch) -> None:
+    """.env.example names these GOOGLE_LOGIN_CLIENT_ID/SECRET (P0-022); the field names
+    are oidc_client_id/secret, so without a validation_alias they were silently never
+    read from the environment - found while writing the P0-022 quickstart."""
+    env.setenv("GOOGLE_LOGIN_CLIENT_ID", "demo-client-id")
+    env.setenv("GOOGLE_LOGIN_CLIENT_SECRET", "demo-client-secret")
+    settings = Settings()  # type: ignore[call-arg]
+    assert settings.oidc_client_id == "demo-client-id"
+    assert settings.oidc_client_secret.get_secret_value() == "demo-client-secret"
+
+
+@pytest.mark.usefixtures("env")
+def test_oidc_settings_still_constructible_by_field_name() -> None:
+    """populate_by_name=True keeps direct kwarg construction working (test_auth.py,
+    test_cross_tenant.py build Settings(oidc_client_id=..., ...) directly)."""
+    settings = Settings(oidc_client_id="direct-kwarg-id")  # type: ignore[call-arg]
+    assert settings.oidc_client_id == "direct-kwarg-id"

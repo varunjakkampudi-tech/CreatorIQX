@@ -46,12 +46,48 @@ python scripts/dev.py <command>     # Windows: py scripts/dev.py <command>
 | `up` | Starts PostgreSQL (port 55432) and Redis (port 56379) on localhost and waits until healthy |
 | `down` | Stops them; database data is kept |
 | `api` | Runs the API at http://127.0.0.1:8000 with reload. Health: `/healthz`, `/readyz`; metrics: `/metrics`; docs: `/api/v1/docs` |
+| `migrate` | Applies database migrations (owner role) |
+| `up-full` | One-command setup (P0-022): builds and starts postgres, redis, api, worker and web as containers, then migrates and seeds |
+| `down-full` | Stops the full containerized stack; database data is kept |
+| `seed` | Creates the second demo workspace used for manual cross-tenant checks |
 
-More commands (migrate, app services) arrive with their tickets.
+More commands (openapi, erd) are documented in `scripts/dev.py`'s own docstring.
 
 ## Quickstart
 
-Running the app end to end arrives with ticket P0-022 (one-command setup) and must take a new developer under 30 minutes.
+```
+git clone <this repo>
+cd creatoriqx
+python scripts/dev.py setup      # toolchain check, .env, Python + JS dependencies, git hooks
+python scripts/dev.py up-full    # builds and starts postgres, redis, api, worker, web; migrates; seeds
+```
+
+`up-full` waits until every service reports healthy, then runs database
+migrations and creates a second demo workspace (for manual cross-tenant
+checks) under a fixed fake Google subject - no real Google account needed
+for that part. When it finishes:
+
+| Check | URL |
+|---|---|
+| API liveness | <http://127.0.0.1:58000/healthz> |
+| API readiness (DB + Redis) | <http://127.0.0.1:58000/readyz> |
+| API docs (OpenAPI) | <http://127.0.0.1:58000/api/v1/docs> |
+| Web app | <http://127.0.0.1:3000> |
+
+**Signing in** needs a real Google OAuth client (`GOOGLE_LOGIN_CLIENT_ID` /
+`GOOGLE_LOGIN_CLIENT_SECRET` in `.env`) - see
+[`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) for the current status of
+getting one. Without it, `/api/v1/auth/*` is not mounted at all (by design:
+the app never pretends login works with no client configured), so the web
+app has no screens to sign into yet either - see the status line at the top
+of this file. **Phase 0 is infrastructure, not a usable product**: this
+quickstart proves the stack boots, migrates and serves traffic end to end,
+not that there is a dashboard to reach.
+
+Stop everything with `python scripts/dev.py down-full` (data volumes are kept).
+
+For day-to-day backend development (hot reload, no container rebuild per
+change), use `up` + `api` instead of `up-full` - see Developer tasks above.
 
 ## License
 
