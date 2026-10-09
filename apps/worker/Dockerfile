@@ -33,7 +33,7 @@ WORKDIR /app
 # (a real workspace dependency, not just the --no-install-project target), so
 # uv must be able to build it even in this "dependencies" sync.
 COPY pyproject.toml uv.lock ./
-COPY apps/api/pyproject.toml apps/api/pyproject.toml
+COPY apps/api/pyproject.toml apps/api/README.md apps/api/
 COPY apps/api/src apps/api/src
 COPY apps/worker/pyproject.toml apps/worker/pyproject.toml
 RUN --mount=type=cache,target=/root/.cache/uv \
