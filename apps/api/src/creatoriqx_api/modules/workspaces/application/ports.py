@@ -1,4 +1,4 @@
-"""Ports for the workspace bootstrap.
+"""Ports for the workspaces module: first-login bootstrap and access checks.
 
 Infrastructure implements them; the application never imports SQL.
 
@@ -12,6 +12,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Protocol
 
+from creatoriqx_api.modules.workspaces.domain.access import WorkspaceAccess
 from creatoriqx_api.modules.workspaces.domain.bootstrap import BootstrapResult
 
 
@@ -33,3 +34,16 @@ class PersonalWorkspaceStore(Protocol):
 
     async def ensure(self, command: BootstrapCommand) -> BootstrapResult:
         """Create what is missing for ``command.subject`` and return the resolved ids."""
+
+
+class WorkspaceAccessStore(Protocol):
+    """Reads the caller's membership of one workspace (P0-054).
+
+    One query answers both questions a request asks: does this user belong to
+    this workspace, and what may they do in it.
+    """
+
+    async def access(
+        self, *, workspace_id: uuid.UUID, user_id: uuid.UUID
+    ) -> WorkspaceAccess | None:
+        """The caller's verified access, or None when they are not a member."""
