@@ -29,7 +29,23 @@ jobs:
           cache: pnpm
 
       - name: Install (generates the lockfile)
-        run: pnpm install --no-frozen-lockfile
+        run: |
+          set +e
+          pnpm install --no-frozen-lockfile > "$RUNNER_TEMP/install.log" 2>&1
+          echo "install exit=$?" >> "$RUNNER_TEMP/install.log"
+
+      - name: Post the install log as a PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "## Install log for ${{ github.sha }}"
+            echo '```'
+            tail -c 60000 "$RUNNER_TEMP/install.log"
+            echo '```'
+          } > "$RUNNER_TEMP/install-comment.md"
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/install-comment.md"
 
       - name: Run the gates and keep going even if one fails
         run: |
