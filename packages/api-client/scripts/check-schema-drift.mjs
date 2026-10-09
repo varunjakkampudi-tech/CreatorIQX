@@ -13,14 +13,13 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const committed = path.join(root, "src", "schema.d.ts");
 const fresh = path.join(root, "src", "schema.d.ts.fresh");
 
+// node_modules/.bin/openapi-typescript is a POSIX shell shim (not JS) that
+// resolves symlinks and then execs the real CLI entry point, so it must be
+// run directly (its own shebang picks the interpreter) rather than passed
+// as an argument to `node`, which fails trying to parse the shim as JS.
 execFileSync(
-  "node",
-  [
-    path.join(root, "node_modules", ".bin", "openapi-typescript"),
-    path.join(root, "openapi.json"),
-    "-o",
-    fresh,
-  ],
+  path.join(root, "node_modules", ".bin", "openapi-typescript"),
+  [path.join(root, "openapi.json"), "-o", fresh],
   { stdio: "inherit" },
 );
 
