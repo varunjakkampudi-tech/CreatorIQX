@@ -19,14 +19,20 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from creatoriqx_api import __version__
 from creatoriqx_api.modules.identity.api.auth import router as auth_router
+from creatoriqx_api.modules.identity.api.me import router as me_router
 from creatoriqx_api.modules.identity.api.sessions import router as sessions_router
 from creatoriqx_api.modules.identity.application.auth_service import AuthService
 from creatoriqx_api.modules.identity.application.session_service import SessionService
 from creatoriqx_api.modules.identity.domain.session import SessionPolicy
 from creatoriqx_api.modules.identity.infrastructure.google_oidc import GoogleOIDCProvider
 from creatoriqx_api.modules.identity.infrastructure.key_value_store import RedisKeyValueStore
+from creatoriqx_api.modules.workspaces.api.routes import router as workspaces_router
+from creatoriqx_api.modules.workspaces.application.access_service import WorkspaceAccessService
 from creatoriqx_api.modules.workspaces.application.bootstrap_service import (
     WorkspaceBootstrapService,
+)
+from creatoriqx_api.modules.workspaces.infrastructure.sql_access_store import (
+    SqlWorkspaceAccessStore,
 )
 from creatoriqx_api.modules.workspaces.infrastructure.sql_store import SqlPersonalWorkspaceStore
 from creatoriqx_api.platform.database import create_engine, create_session_factory
@@ -126,6 +132,8 @@ def create_app(
         )
 
     app.include_router(sessions_router, prefix=API_V1_PREFIX)
+    app.include_router(me_router, prefix=API_V1_PREFIX)
+    app.include_router(workspaces_router, prefix=API_V1_PREFIX)
 
     # Feature modules attach their routers here as they are built.
     app.include_router(APIRouter(prefix=API_V1_PREFIX))
@@ -136,9 +144,11 @@ def create_app(
 
 
 def _wire_workspaces(app: FastAPI, engine: AsyncEngine) -> None:
-    """The first-login bootstrap writes through the runtime role under forced RLS (ADR 0011)."""
-    store = SqlPersonalWorkspaceStore(create_session_factory(engine))
-    app.state.bootstrap_service = WorkspaceBootstrapService(store)
+    """Bootstrap and access checks both run as the runtime role under forced RLS (ADR 0011)."""
+    factory = create_session_factory(engine)
+    app.state.session_factory = factory
+    app.state.bootstrap_service = WorkspaceBootstrapService(SqlPersonalWorkspaceStore(factory))
+    app.state.workspace_access_service = WorkspaceAccessService(SqlWorkspaceAccessStore(factory))
 
 
 def _wire_sessions(app: FastAPI, settings: Settings, redis: Redis) -> None:
