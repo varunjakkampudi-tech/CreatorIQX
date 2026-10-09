@@ -1,18 +1,23 @@
 import { Sparkles } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import productConfig from "@creatoriqx/config/product.json" with { type: "json" };
 import { cn } from "@/lib/utils";
 
 /**
- * Frontend-foundation placeholder (P0-080), not a product screen. The
+ * Frontend-foundation placeholder (P0-080/P0-082), not a product screen. The
  * named UI screens in spec section 11 (onboarding, video board, the
  * Video Workspace, approval diff, YouTube Sync) wait on P0-090's
  * written wireframe approval. This page exists only to prove the
  * design tokens render correctly in light and dark using Tailwind
  * utilities alone — every color below is a token utility (bg-surface,
  * text-ink, ...), never a raw hex literal, which is also enforced by
- * eslint.config.mjs.
+ * eslint.config.mjs. Its one piece of UI copy comes from next-intl
+ * (messages/en.json), not a literal string, enforced by the
+ * no-raw-jsx-text lint rule in eslint.config.mjs.
  */
-export default function TokensFoundationPage() {
+export default async function TokensFoundationPage() {
+  const t = await getTranslations("TokensFoundationPage");
+
   const swatches: Array<{ label: string; className: string }> = [
     { label: "surface", className: "bg-surface border border-border" },
     {
@@ -34,10 +39,7 @@ export default function TokensFoundationPage() {
         </h1>
       </header>
       <p className="text-base text-ink-muted">{productConfig.tagline}</p>
-      <p className="text-sm text-ink-muted">
-        Frontend foundation (P0-080): design tokens only. Product screens follow
-        once P0-090&apos;s wireframes are approved.
-      </p>
+      <p className="text-sm text-ink-muted">{t("caption")}</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {swatches.map((swatch) => (
           <div

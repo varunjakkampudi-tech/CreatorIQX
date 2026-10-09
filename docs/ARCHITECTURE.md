@@ -294,3 +294,53 @@ Button/Input/Card/Skeleton). `next.config.ts` rewrites `/api/*` to the local
 FastAPI backend so the dev server runs on a single origin. The product name
 comes from `@creatoriqx/config/product.json`, read by both this app and the
 API, never hard-coded in either.
+
+## Generated API client (P0-081)
+
+`packages/api-client` turns the backend's exported `openapi.json` (P0-033)
+into TypeScript types with openapi-typescript, and wraps them with
+openapi-fetch and openapi-react-query so a call like
+`$api.useQuery("get", "/api/v1/me")` is typed end to end: changing a
+response shape in the API breaks the web build at the call site instead of
+failing at runtime. `generate:check` regenerates the types into a temp file
+and fails if they differ from the committed `src/schema.d.ts`, the same
+drift-check shape as `scripts/export_openapi.py --check` on the Python side.
+`apps/web/src/lib/api.ts` is the one place the generated client is wired
+into a `QueryClientProvider` (`src/app/providers.tsx`); no screen reads from
+it yet (P0-090 still gates screens).
+
+## Content Security Policy with per-request nonces (P0-082)
+
+`src/proxy.ts` (Next.js 16 renamed `middleware.ts` to `proxy.ts`) runs on
+every page request except `/api/*` and static assets, generates a fresh
+nonce, and sets it on both the `Content-Security-Policy` response header
+(`script-src 'self' 'nonce-<value>' 'strict-dynamic'`) and an `x-nonce`
+request header. Next.js reads the nonce back out of its own CSP header and
+applies it automatically to the scripts it injects (its runtime, page
+bundles); a script injected any other way - without the nonce - is refused
+by the browser, which is what the Playwright test in `tests/e2e/csp.spec.ts`
+checks directly. A nonce is only meaningful per request, so every page
+renders dynamically (`export const dynamic = "force-dynamic"` in
+`app/layout.tsx`); this costs the static optimization a public marketing
+page might want, which is an accepted trade for a product whose pages are
+authenticated anyway. The API sets its own, separate, stricter CSP
+(`platform/security.py`, `default-src 'none'`) since it never serves HTML.
+
+```mermaid
+flowchart LR
+    req["Request"] --> proxy["proxy.ts: generate a nonce"]
+    proxy --> header["CSP header: script-src self nonce strict-dynamic"]
+    proxy --> xnonce["x-nonce request header"]
+    header --> trusted["Next.js own scripts: nonce applied automatically"]
+    header -. blocks .-> untrusted["A script with no nonce"]
+```
+
+next-intl (`src/i18n/request.ts`, `messages/en.json`) is wired in alongside
+CSP so every page reads its copy through `useTranslations`/`getTranslations`
+from day one, at one locale (`en`) with no URL prefix (spec section 5,
+"i18n: next-intl, prepared, English first"); adding a second locale later
+means resolving `locale` from the request instead of hard-coding it, not
+touching any screen. A lint rule (`eslint-rules/no-raw-jsx-text.mjs`) forbids
+a letter-bearing string literal directly in JSX text or in
+`alt`/`title`/`placeholder`/`aria-label`, so copy can only be added through a
+message key.
