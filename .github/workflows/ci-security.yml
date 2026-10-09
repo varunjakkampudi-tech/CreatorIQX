@@ -66,9 +66,10 @@ jobs:
             --locked >> /tmp/requirements.txt
 
       - name: pip-audit (report-only; does not fail the build in Phase 0)
+        continue-on-error: true
         run: |
           uv tool run pip-audit --requirement /tmp/requirements.txt \
-            --format markdown >> "$GITHUB_STEP_SUMMARY" || true
+            --format markdown >> "$GITHUB_STEP_SUMMARY"
           uv tool run pip-audit --requirement /tmp/requirements.txt
 
   pnpm-audit:
@@ -89,13 +90,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: pnpm audit (report-only; does not fail the build in Phase 0)
+        continue-on-error: true
         run: |
           {
             echo '```'
-            pnpm audit || true
+            pnpm audit
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          pnpm audit || true
+          pnpm audit
 
   trivy:
     name: Container image scan (Trivy, report-only in Phase 0)
