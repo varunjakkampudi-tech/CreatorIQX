@@ -18,9 +18,15 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:3100",
   },
   webServer: {
-    command: "pnpm run build && pnpm run start -- --port 3100",
+    // `next start` reads PORT from the environment; passing `-- --port`
+    // through `pnpm run` double-forwarded the "--" itself in CI (pnpm
+    // 12.10.1), producing `next start -- --port 3100` and a "no such
+    // directory: --port" error, so PORT avoids the arg-forwarding path
+    // entirely instead of chasing that quoting.
+    command: "pnpm run build && pnpm run start",
     url: "http://127.0.0.1:3100",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
+    env: { PORT: "3100" },
   },
 });
