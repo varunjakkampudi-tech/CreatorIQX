@@ -15,3 +15,4 @@ Every significant decision gets an ADR (spec §0.4). Copy [`0000-template.md`](0
 | [0009](0009-quota-ledger-redis-postgres.md) | Track YouTube quota live in Redis and durably in Postgres | Accepted | 2026-10-08 |
 | [0010](0010-server-side-sessions-and-csrf.md) | Use server-side sessions in Redis with CSRF tokens and two timeouts | Accepted | 2026-10-09 |
 | [0011](0011-workspace-bootstrap-at-first-login.md) | Bootstrap the user, personal workspace and owner membership at first login | Accepted | 2026-10-09 |
+| [0012](0012-rbac-in-the-application-layer-with-a-route-harness.md) | Decide authorization in the application layer, and prove it with a route-enumerating harness | Accepted | 2026-10-09 |

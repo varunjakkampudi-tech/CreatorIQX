@@ -105,9 +105,7 @@ async def test_authorize_refuses_a_role_that_is_too_low() -> None:
 
 async def test_authorize_refuses_a_user_who_is_not_a_member() -> None:
     with pytest.raises(InsufficientRoleError):
-        await _service().authorize(
-            workspace_id=WORKSPACE, user_id=OTHER_USER, required=Role.VIEWER
-        )
+        await _service().authorize(workspace_id=WORKSPACE, user_id=OTHER_USER, required=Role.VIEWER)
 
 
 async def test_authorize_refuses_a_workspace_the_caller_does_not_belong_to() -> None:

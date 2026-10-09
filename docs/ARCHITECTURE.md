@@ -213,3 +213,49 @@ flowchart TD
     reuse --> audit
     audit --> commit["COMMIT, then issue the session with user_id and workspace_id"]
 ```
+
+## Authorization on every request (P0-054)
+
+One gate stands in front of tenant data. A route declares the role it needs; the
+gate resolves the workspace and user from the session, re-checks membership, and
+hands the route a verified `WorkspaceAccess`. The rules are in
+[ADR 0012](adr/0012-rbac-in-the-application-layer-with-a-route-harness.md).
+
+```mermaid
+flowchart TD
+    req["Request with a session cookie"] --> sess{"Live session?"}
+    sess -- no --> r401["401 session-required"]
+    sess -- yes --> unsafe{"Unsafe method?"}
+    unsafe -- yes --> csrf{"X-CSRF-Token matches?"}
+    csrf -- no --> r403c["403 csrf-token-invalid"]
+    csrf -- yes --> gate
+    unsafe -- no --> gate{"require_role: membership in the session's workspace?"}
+    gate -- none --> r403["403 insufficient-role"]
+    gate -- "role too low" --> r403
+    gate -- ok --> rls["Query under app.workspace_id and app.user_id"]
+    rls --> handler["Route handler, with a verified WorkspaceAccess"]
+```
+
+The two layers are independent on purpose. `require_role` refuses the request
+before any work happens and can express a role requirement; row-level security
+cannot express roles but stops a query that slips past the gate from reading
+another tenant's rows.
+
+### Why the harness enumerates routes
+
+A per-route check is only as reliable as the next person adding a route, so the
+cross-tenant harness reads the OpenAPI document rather than a list of routes. It
+signs in a user whose session names workspace A while holding no membership there,
+and requires every documented route to refuse. A route added later is covered as
+soon as it appears; exempting one is an explicit entry with a reason, and a seeded
+unprotected route is asserted to make the harness fail.
+
+```mermaid
+flowchart LR
+    doc["app.openapi() paths"] --> split{"In EXEMPT?"}
+    split -- yes --> reason["Skipped, with a recorded reason"]
+    split -- no --> call["Call as a non-member of the session's workspace"]
+    call --> judge{"401, 403 or 404?"}
+    judge -- yes --> ok["Isolated"]
+    judge -- no --> fail["Harness fails: tenant isolation hole"]
+```

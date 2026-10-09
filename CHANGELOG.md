@@ -6,6 +6,15 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ### Added
 
+- RBAC per workspace: `require_role()` gates every route that touches tenant data,
+  resolving the workspace and user from the session and re-checking membership on
+  every request, so a removed or demoted member loses access at once. Roles are
+  ranked (owner > editor > viewer) and a non-member and an under-privileged member
+  receive the same 403 (P0-054, ADR 0012).
+- `GET /api/v1/me` and `GET /api/v1/workspaces/current`.
+- Cross-tenant harness: enumerates every route in the OpenAPI document and requires
+  a denial for a caller who is not a member of the workspace their session names, so
+  routes added later are covered automatically.
 - `workspaces` bounded context as the reference hexagonal module: first login creates the
   user, a personal workspace and an owner membership in one transaction under forced
   row-level security, with an advisory lock per Google subject and no privileged bypass

@@ -79,7 +79,7 @@ jobs:
           code=$?
           printf '### pytest: %s\n\n```\n%s\n```\n\n' \
             "$([ $code -eq 0 ] && echo PASS || echo "FAIL (exit $code)")" \
-            "$(printf '%s' "$out" | grep -E "passed|failed|Total coverage|Required test|domain and application" | tail -20)" >> "$report"
+            "$(printf '%s' "$out" | grep -iE "passed|failed|Total coverage|Required test|domain and application" | tail -20)" >> "$report"
 
           # Mermaid rendering, the same check the docs workflow runs.
           echo '{"args":["--no-sandbox"]}' > "$RUNNER_TEMP/puppeteer.json"
