@@ -4,14 +4,14 @@ Read this file at the start of every session. Update it at the end of every sess
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-10-09 (session 2, Linux sandbox) |
+| Last updated | 2026-10-09 (session 2, Linux sandbox) — P0-101 recorded |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation, implementation in progress** (plan approved by owner 2026-10-08) |
-| Last PASS ticket | **P0-021** — E3 Local runtime, app images (multi-stage Dockerfiles for api, worker, web; non-root) (also PASS: P0-001 to P0-007, P0-010 to P0-013, P0-020, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-053, P0-054, P0-060, P0-080 to P0-083, P0-100) |
+| Last PASS ticket | **P0-101** — E12 CI and security, JS CI gate proven to turn red on a seeded failure (also PASS: P0-001 to P0-007, P0-010 to P0-013, P0-020, P0-021, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-053, P0-054, P0-060, P0-080 to P0-083, P0-100) |
 | Open BLOCKED items | P0-052 (real Google login, owner action). P0-090 (wireframe approval, owner action). P0-022 (one-command setup is built and CI-verified end to end, but its acceptance test - a timed walkthrough to a logged-in dashboard - needs both P0-052 and P0-090 to be unblocked first) |
 | Build environment | Session 1: owner's Windows 11 machine (Claude Desktop Commander), no longer reachable. Session 2: Linux sandbox, clone at `/home/claude/creatoriqx`. PyPI and files.pythonhosted.org return proxy 403 there (egress policy); the npm registry returns a DNS failure there too (same effective restriction). No Python or JS package install runs locally, and there is no local Docker daemon either, so `docker build`/`docker run` run only in CI too. **GitHub Actions is the verification environment**: gates are run by pushing and reading the result. Actions log blobs and artifact blobs are also unreachable from the sandbox, so a temporary workflow posted gate output (and the resolved `pnpm-lock.yaml`, and for P0-081 the generated `schema.d.ts`, and for P0-021 docker build log tails, in ordered parts) as pull request comments; it is deleted once the real ticket is green. `WebFetch`/`WebSearch` can reach the npm registry even though the sandbox shell cannot, so current dependency versions are still checked against the registry before pinning them |
-| Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works. **main is current.** PRs #1 (P0-053), #2 (P0-054, retargeted to `main` after a gap was found and fixed in #4), #3 (P0-050 backlog-sync), #4 (P0-054's actual code), #5 (P0-080), #6 (P0-081), #7 (P0-082), #8 (P0-083), #9 (P0-012), #10 (P0-060), #11 (docs for P0-060), #12 (P0-021), #13 (docs for P0-021), and
-#14 (P0-022) are all merged. PRs from #6 onward were self-merged directly by Claude (squash) once every check went green, per the owner's instruction to stop waiting for manual PR merges |
+| Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works. **main is current.** PRs #1 (P0-053), #2 (P0-054, retargeted to `main` after a gap was found and fixed in #4), #3 (P0-050 backlog-sync), #4 (P0-054's actual code), #5 (P0-080), #6 (P0-081), #7 (P0-082), #8 (P0-083), #9 (P0-012), #10 (P0-060), #11 (docs for P0-060), #12 (P0-021), #13 (docs for P0-021), #14 (P0-022), and
+#15 (docs for P0-022) are all merged. PR #16 (P0-101's seeded-failure verification, branch `ci/seed-fail-js`) was opened to prove `ci-js` turns red, confirmed, then **closed without merging** - it was a throwaway verification PR, not landed code. PRs from #6 onward were self-merged directly by Claude (squash) once every check went green, per the owner's instruction to stop waiting for manual PR merges |
 
 ## Ticket log
 
@@ -50,6 +50,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-060 | PASS | `TaskQueue` port (`enqueue(JobRequest) -> JobHandle`, ADR 0003) with a `CeleryTaskQueue` adapter; Redis broker on its own logical db (`CELERY_BROKER_URL`, db 1, separate from `REDIS_URL`'s db 0). One working job `ops.ping` plus a test-only `ops.flaky` proving retry-then-failed. New `apps/worker` uv workspace member: a thin wrapper with no task code of its own, just a documented Celery CLI entrypoint pointed at `creatoriqx_api`'s app. Import-linter contract `jobs-celery-boundary`: only `jobs.infrastructure` may import `celery`. Unit test (mocked `send_task`) plus two integration tests against a real embedded Celery worker and real Redis broker: job completes with an observable result; a failing job retries then lands in `FAILURE` with the original exception re-raised. 234 tests passed, 94.44% coverage. CI green on commit `399d3ba`; PR #10 self-merged |
 | P0-021 | PASS | Multi-stage Dockerfiles for `apps/api`, `apps/worker`, `apps/web`, each ending in a non-root final stage (uid 10001 for the two Python images, the `node:22-slim` image's own built-in `node` user for web). New `ci-docker` workflow builds all three with real `docker build` and asserts `docker run --entrypoint id <image> -u` is not `0` for each - the only place this can run, since the sandbox has no local Docker daemon. `mcp-server` is out of scope (depends on P0-070, deferred to Phase 1A; already logged below). CI green on commit `118fe74` (ci-docker run 37955750479, ci-python 37955750478, ci-js 37955750456); PR #12 self-merged |
 | P0-022 | BLOCKED | Built and CI-verified end to end: `dev.py up-full` boots postgres/redis/api/worker/web (new compose profile `full`, gated so it never changes what CI's plain `up` starts), applies all 5 migrations, seeds a second demo workspace (`seed_demo_workspace.py`, through the real `WorkspaceBootstrapService` with a fixed fake Google subject - same tenant-safe path a real login uses). `ci-docker`'s new `full-stack` job (run 37959528756) proves it for real: `/healthz` and `/readyz` return 200, the web app's `/` renders, the worker answers a Celery `inspect ping`. Fixed two real defects found doing this: `GOOGLE_LOGIN_CLIENT_ID`/`SECRET` were never actually read from the environment (wrong implied env-var name - see decisions below), and the api image crashed on its first request (`product_config_path` assumed an editable install). The ticket's literal acceptance test - a timed fresh-clone-to-logged-in-dashboard walkthrough under 30 minutes - cannot be completed from here: there is no dashboard yet (P0-090, BLOCKED on the owner) and signing in needs a real Google OAuth client in `.env` (P0-052, BLOCKED on the owner). PR #14 self-merged (commit `6a18e2c`) |
+| P0-101 | PASS | `ci-js` (pnpm install --frozen-lockfile, ESLint, tsc, Vitest, dependency-cruiser, Storybook build) is green on `main` (e.g. run 37960240466). Seeded-failure verification: branch `ci/seed-fail-js`, PR #16, one deliberately-broken Vitest assertion in `apps/web/src/components/ui/button.test.tsx` made run 37960356348 fail with conclusion `failure` at step "Unit tests - UI primitives (apps/web, P0-083)" - proving the gate actually catches a real test failure, not just a lint issue. Seed reverted, PR #16 closed without merging, local branch deleted (no production code changed) |
 
 ## Owner actions pending
 
@@ -118,13 +119,16 @@ Read this file at the start of every session. Update it at the end of every sess
 
 ## Exact next step
 
-PR #14 (P0-022) was merged directly (squash) once every check was green, per the
-owner's standing instruction to stop waiting for a manual PR merge, even though
-the ticket's own outcome is recorded BLOCKED (everything buildable from here is
-built and CI-verified; the acceptance test itself needs the owner). Continue in
-backlog order:
+P0-101 (JS CI gate verification) is done: `ci-js` is green on `main`, and a seeded
+failure was proven to turn it red (PR #16, closed without merging once confirmed).
+Continue in backlog order:
 
-- **P0-101 to P0-103** JS CI, security scans, end-to-end with a test-only OIDC stub.
+- **P0-102** Security scans: pip-audit, pnpm audit, Trivy image scan, code scanning
+  (CodeQL), Dependabot config. Depends on P0-100 (done) and P0-021 (done).
+- **P0-103** End-to-end in CI: Playwright + axe on login and shell, using a test-only
+  OIDC stub gated to `APP_ENV=test`, plus a production-config test proving the stub
+  404s and isn't importable outside that env. Depends on P0-092 (status not yet
+  checked this session) and P0-021 (done).
 - **P0-110** Phase 0 scorecard and the v0.1.0 tag.
 
 When the owner resolves P0-052 (real Google login) and P0-090 (wireframe
