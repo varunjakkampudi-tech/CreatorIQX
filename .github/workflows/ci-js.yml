@@ -1,0 +1,53 @@
+name: ci-js
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-js-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Lint, types, build (apps/web)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Format check (root Prettier, every workspace)
+        run: pnpm run format:check
+
+      - name: Lint (apps/web)
+        run: pnpm --filter @creatoriqx/web run lint
+
+      - name: Typecheck (apps/web)
+        run: pnpm --filter @creatoriqx/web run typecheck
+
+      - name: Build (apps/web)
+        run: pnpm --filter @creatoriqx/web run build
+
+      - name: Upload the resolved lockfile (so it can be committed if it drifted)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-lock
+          path: pnpm-lock.yaml
+          retention-days: 7
+
+      - name: Fail if the committed lockfile is out of date
+        run: git diff --exit-code pnpm-lock.yaml

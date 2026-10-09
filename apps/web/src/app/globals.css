@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens (spec section 11: color, 8px spacing grid, type scale,
+ * radius, motion). These CSS variables are the single source every
+ * component reads from — a lint rule (eslint.config.mjs) forbids raw hex
+ * literals in .ts/.tsx so a component cannot bypass them.
+ *
+ * Tailwind v4 is CSS-first: @theme maps each variable to a utility
+ * (bg-surface, text-ink, p-2 at the 8px grid, etc.) instead of a
+ * tailwind.config.js file.
+ */
+@theme {
+  /* 8px spacing grid */
+  --spacing: 0.5rem;
+
+  /* Type scale */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-standard: 200ms;
+
+  /* Color — light values; dark values override the same custom
+     properties below, so utilities such as bg-surface never change. */
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+}
+
+:root {
+  --surface: #ffffff;
+  --surface-raised: #f8fafc;
+  --ink: #0f172a;
+  --ink-muted: #475569;
+  --border: #e2e8f0;
+  --brand: #4f46e5;
+  --brand-ink: #ffffff;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #d97706;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #0b1220;
+    --surface-raised: #111827;
+    --ink: #f1f5f9;
+    --ink-muted: #94a3b8;
+    --border: #1e293b;
+    --brand: #818cf8;
+    --brand-ink: #0b1220;
+    --danger: #f87171;
+    --success: #4ade80;
+    --warning: #fbbf24;
+  }
+}
+
+:root[data-theme="dark"] {
+  --surface: #0b1220;
+  --surface-raised: #111827;
+  --ink: #f1f5f9;
+  --ink-muted: #94a3b8;
+  --border: #1e293b;
+  --brand: #818cf8;
+  --brand-ink: #0b1220;
+  --danger: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+}
+
+body {
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

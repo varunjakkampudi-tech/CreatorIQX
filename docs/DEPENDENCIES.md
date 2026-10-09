@@ -25,6 +25,20 @@ Every dependency is checked for its latest stable version **at install time** (s
 | Package | Version | Checked on | Scope | Why |
 |---|---|---|---|---|
 | prettier | 3.9.9 (exact) | 2026-10-08 | root dev | Formatter; exact pin so formatting never shifts between machines |
+| next | 16.4.0 | 2026-10-09 | apps/web | App Router framework (P0-080) |
+| react, react-dom | 19.3.0 | 2026-10-09 | apps/web | Peer of Next 16.4 |
+| @types/react, @types/react-dom | 19.3.0 | 2026-10-09 | apps/web dev | Types matching the installed React |
+| typescript | 6.0.3 | 2026-10-09 | apps/web dev | Strict TS for the web app. npm's `latest` tag is 7.0.2, but `typescript-eslint@8.71.1`'s peer range is `>=4.8.4 <6.1.0` (confirmed by a real CI failure, not guessed), so 6.0.3 is the newest version both tools accept |
+| @types/node | 26.6.4 | 2026-10-09 | apps/web dev | Types for Next's Node-side code (config, route handlers) |
+| tailwindcss, @tailwindcss/postcss | 4.3.3 | 2026-10-09 | apps/web / apps/web dev | CSS-first design tokens via `@theme` (P0-080); no `tailwind.config.js` needed in v4 |
+| clsx | 2.1.1 | 2026-10-09 | apps/web | Conditional class composition, used by `cn()` |
+| tailwind-merge | 3.7.0 | 2026-10-09 | apps/web | Resolves conflicting Tailwind utilities in `cn()` (shadcn/ui convention) |
+| lucide-react | 1.53.0 | 2026-10-09 | apps/web | Icon set named in spec section 5 |
+| eslint | 10.12.0 | 2026-10-09 | apps/web dev | Flat config; carries the no-raw-hex rule for P0-080 |
+| @eslint/js, typescript-eslint | 10.0.1, 8.71.1 | 2026-10-09 | apps/web dev | Recommended rule sets for the flat config |
+| @next/eslint-plugin-next | 16.4.0 | 2026-10-09 | apps/web dev | Next's own lint rules, added directly to the flat config (no `eslint-config-next` compat wrapper needed) |
+
+CI-only (not in any `package.json`, fetched by `npx` the way `docs.yml` already fetches `@mermaid-js/mermaid-cli`): `playwright@1.64.0` (light/dark screenshot evidence for P0-080; Playwright becomes a real devDependency in P0-083 when the Playwright+axe harness is built), `wait-on@9` (waits for `next start` before screenshotting).
 
 ## Python packages (dev group, root `pyproject.toml`)
 
