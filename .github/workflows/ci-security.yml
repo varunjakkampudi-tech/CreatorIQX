@@ -1,0 +1,131 @@
+name: ci-security
+
+# Security scans (spec §10, §17; backlog P0-102). Gitleaks blocks from Phase 0
+# (spec rule "secret scanning in CI"); pip-audit, pnpm audit and the Trivy
+# image scan are report-only in Phase 0 and become blocking from Phase 1A
+# (OQ-09 answer: gitleaks is cheap and has no false-positive-tuning history
+# yet, the others need a baseline triage first). CodeQL lives in its own
+# workflow (codeql.yml) because GitHub's advanced-setup action wants to own
+# its trigger and default branch analysis.
+
+on:
+  push:
+    branches: [main, "ci/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: Secret scan (gitleaks, blocking)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # gitleaks scans full history, not just the diff
+
+      - name: Run gitleaks (same version as the pre-commit hook)
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: "8.30.0"
+          # GITLEAKS_LICENSE: not required - this repo is on a personal
+          # account, not an organization (gitleaks-action's own licensing
+          # rule).
+          # Comments and SARIF-artifact upload both need extra permissions
+          # (pull-requests: write); this job stays read-only like every
+          # other workflow here and relies on the job summary plus the
+          # (blocking) step failure instead.
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+  pip-audit:
+    name: Python dependency audit (pip-audit, report-only in Phase 0)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Export the locked dependency set
+        run: |
+          uv export --package creatoriqx-api --no-dev --no-hashes --format requirements.txt \
+            --locked > /tmp/requirements.txt
+          uv export --package creatoriqx-worker --no-dev --no-hashes --format requirements.txt \
+            --locked >> /tmp/requirements.txt
+
+      - name: pip-audit (report-only; does not fail the build in Phase 0)
+        continue-on-error: true
+        run: |
+          uv tool run pip-audit --requirement /tmp/requirements.txt \
+            --format markdown >> "$GITHUB_STEP_SUMMARY"
+          uv tool run pip-audit --requirement /tmp/requirements.txt
+
+  pnpm-audit:
+    name: JS dependency audit (pnpm audit, report-only in Phase 0)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm audit (report-only; does not fail the build in Phase 0)
+        continue-on-error: true
+        run: |
+          {
+            echo '```'
+            pnpm audit
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          pnpm audit
+
+  trivy:
+    name: Container image scan (Trivy, report-only in Phase 0)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            dockerfile: apps/api/Dockerfile
+            tag: creatoriqx-api:scan
+          - name: worker
+            dockerfile: apps/worker/Dockerfile
+            tag: creatoriqx-worker:scan
+          - name: web
+            dockerfile: apps/web/Dockerfile
+            tag: creatoriqx-web:scan
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the image to scan
+        run: docker build -f ${{ matrix.dockerfile }} -t ${{ matrix.tag }} .
+
+      - name: Trivy scan (report-only; exit-code 0 in Phase 0)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ matrix.tag }}
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+          format: "table"
