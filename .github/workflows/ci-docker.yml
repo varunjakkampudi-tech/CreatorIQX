@@ -1,11 +1,12 @@
 name: ci-docker
 
-# Builds the production images for api, worker and web (P0-021) and proves
-# each one runs as a non-root user, then (P0-022) boots the full containerized
-# stack (`dev.py up-full`'s compose profile) and proves it actually serves
-# traffic end to end: /healthz, /readyz and the web app's "/" all answer, and
-# the worker answers a Celery ping. The sandbox this project is built in has
-# no local Docker daemon, so this workflow is the only place any of this
+# Builds the production images for api, worker, web and mcp-server (P0-021,
+# P0-070) and proves each one runs as a non-root user, then (P0-022) boots
+# the full containerized stack (`dev.py up-full`'s compose profile) and
+# proves it actually serves traffic end to end: /healthz, /readyz, the web
+# app's "/" and the mcp-server's streamable-http endpoint all answer, and the
+# worker answers a Celery ping. The sandbox this project is built in has no
+# local Docker daemon, so this workflow is the only place any of this
 # actually executes.
 
 on:
@@ -22,7 +23,7 @@ concurrency:
 
 jobs:
   images:
-    name: Build and verify non-root (api, worker, web)
+    name: Build and verify non-root (api, worker, web, mcp-server)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
@@ -38,6 +39,9 @@ jobs:
           - name: web
             dockerfile: apps/web/Dockerfile
             image: creatoriqx-web:ci
+          - name: mcp-server
+            dockerfile: apps/mcp-server/Dockerfile
+            image: creatoriqx-mcp-server:ci
     steps:
       - uses: actions/checkout@v7
 
@@ -74,7 +78,7 @@ jobs:
       - name: Install Python dependencies from the lockfile (for migrate/seed)
         run: uv sync --package creatoriqx-api --locked
 
-      - name: Start the full profile (postgres, redis, api, worker, web)
+      - name: Start the full profile (postgres, redis, api, worker, web, mcp-server)
         run: |
           cp .env.example .env
           docker compose --env-file .env -f infra/compose/docker-compose.yml \
@@ -94,6 +98,11 @@ jobs:
           docker compose --env-file .env -f infra/compose/docker-compose.yml --profile full \
             exec -T worker celery -A \
             creatoriqx_api.modules.jobs.infrastructure.celery_app.celery_app inspect ping
+          # mcp-server speaks streamable-http, not plain HTTP: a bare GET is a
+          # protocol error (406/400), not a successful response, so prove it is
+          # listening with a plain TCP connect - the same check its own
+          # Compose healthcheck uses - rather than asserting on a status code.
+          timeout 3 bash -c "exec 3<>/dev/tcp/127.0.0.1/58070" && echo "mcp-server: listening on 58070"
 
       - name: Compose logs (always, for diagnosis)
         if: always()

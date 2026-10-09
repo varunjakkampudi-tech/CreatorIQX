@@ -9,11 +9,8 @@
 # under a profile is skipped by a plain `docker compose up`, so this never
 # changes what CI's bare `docker compose ... up` step starts.
 #
-# mcp-server is not here: it is P0-070's job, deferred to the start of
-# Phase 1A (same scope note as P0-021's app images).
-#
-# Ports bind to 127.0.0.1 only and default to 55432 / 56379 / 58000 / 3000 so
-# they never collide with services already installed on the machine.
+# Ports bind to 127.0.0.1 only and default to 55432 / 56379 / 58000 / 3000 /
+# 58070 so they never collide with services already installed on the machine.
 
 name: creatoriqx
 
@@ -110,6 +107,31 @@ services:
           "inspect",
           "ping",
         ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  mcp-server:
+    profiles: ["full"]
+    build:
+      context: ../..
+      dockerfile: apps/mcp-server/Dockerfile
+    restart: unless-stopped
+    environment:
+      API_BASE_URL: http://api:8000
+    ports:
+      - "127.0.0.1:${MCP_SERVER_HOST_PORT:-58070}:8000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      # A bare GET to the streamable-http endpoint (no MCP session, no
+      # Accept header) is a protocol error (406/400), not a successful MCP
+      # response - but *any* response at all means the server is listening,
+      # which is all a healthcheck needs. A plain TCP connect check avoids
+      # having to special-case that expected HTTP error status.
+      test: ["CMD", "python3", "-c", "import socket; socket.create_connection(('127.0.0.1', 8000), timeout=3).close()"]
       interval: 10s
       timeout: 5s
       retries: 15

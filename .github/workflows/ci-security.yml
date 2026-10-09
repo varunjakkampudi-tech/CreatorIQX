@@ -64,6 +64,8 @@ jobs:
             --locked > /tmp/requirements.txt
           uv export --package creatoriqx-worker --no-dev --no-hashes --format requirements.txt \
             --locked >> /tmp/requirements.txt
+          uv export --package creatoriqx-mcp-server --no-dev --no-hashes --format requirements.txt \
+            --locked >> /tmp/requirements.txt
 
       - name: pip-audit (report-only; does not fail the build in Phase 0)
         continue-on-error: true
@@ -116,6 +118,9 @@ jobs:
           - name: web
             dockerfile: apps/web/Dockerfile
             tag: creatoriqx-web:scan
+          - name: mcp-server
+            dockerfile: apps/mcp-server/Dockerfile
+            tag: creatoriqx-mcp-server:scan
     steps:
       - uses: actions/checkout@v7
 

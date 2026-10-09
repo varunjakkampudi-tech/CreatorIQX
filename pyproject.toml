@@ -1,5 +1,5 @@
 # CreatorIQX Python workspace root (uv). Not a package itself.
-# Members are added as their tickets land: worker (P0-060, done); mcp-server (P0-070).
+# Members are added as their tickets land: worker (P0-060, done); mcp-server (P0-070, done).
 
 [project]
 name = "creatoriqx-workspace"
@@ -11,11 +11,12 @@ requires-python = ">=3.12"
 package = false
 
 [tool.uv.workspace]
-members = ["apps/api", "apps/worker"]
+members = ["apps/api", "apps/worker", "apps/mcp-server"]
 
 [tool.uv.sources]
 creatoriqx-api = { workspace = true }
 creatoriqx-worker = { workspace = true }
+creatoriqx-mcp-server = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -34,7 +35,16 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["apps/api/src", "apps/api/tests", "apps/worker/src", "apps/worker/tests", "scripts", "tests"]
+src = [
+    "apps/api/src",
+    "apps/api/tests",
+    "apps/worker/src",
+    "apps/worker/tests",
+    "apps/mcp-server/src",
+    "apps/mcp-server/tests",
+    "scripts",
+    "tests",
+]
 
 [tool.ruff.lint]
 select = [
@@ -71,7 +81,16 @@ max-complexity = 10
 [tool.mypy]
 strict = true
 python_version = "3.12"
-files = ["apps/api/src", "apps/api/tests", "apps/worker/src", "apps/worker/tests", "scripts", "tests"]
+files = [
+    "apps/api/src",
+    "apps/api/tests",
+    "apps/worker/src",
+    "apps/worker/tests",
+    "apps/mcp-server/src",
+    "apps/mcp-server/tests",
+    "scripts",
+    "tests",
+]
 warn_unreachable = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 
@@ -91,7 +110,7 @@ disallow_untyped_decorators = false
 
 # --- pytest and coverage (spec §12: 85% domain and application, 70% overall) ------
 [tool.pytest.ini_options]
-testpaths = ["apps/api/tests", "apps/worker/tests", "tests"]
+testpaths = ["apps/api/tests", "apps/worker/tests", "apps/mcp-server/tests", "tests"]
 addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
 asyncio_mode = "auto"
 xfail_strict = true
@@ -106,7 +125,7 @@ filterwarnings = [
 markers = ["integration: needs local services running (py scripts/dev.py up)"]
 
 [tool.coverage.run]
-source = ["creatoriqx_api", "creatoriqx_worker"]
+source = ["creatoriqx_api", "creatoriqx_worker", "creatoriqx_mcp_server"]
 branch = true
 
 [tool.coverage.report]

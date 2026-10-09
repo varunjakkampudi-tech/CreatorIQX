@@ -1,0 +1,18 @@
+[project]
+name = "creatoriqx-mcp-server"
+version = "0.1.0"
+description = "CreatorIQX MCP server: exposes app capabilities to Claude (spec §9, ticket P0-070)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # 2.3.0 is current stable as of 2026-10-10 (pypi.org/project/mcp); verify
+    # the current version again before bumping the upper bound.
+    "mcp[cli]>=2.3.0,<3",
+    # Pinned to the exact version already locked for creatoriqx-api, so uv
+    # resolves one shared version across the workspace rather than two.
+    "httpx==0.28.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13"]
+build-backend = "uv_build"
