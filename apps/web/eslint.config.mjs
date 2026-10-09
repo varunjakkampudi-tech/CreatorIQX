@@ -51,6 +51,15 @@ export default tseslint.config(
     rules: { "local/no-raw-jsx-text": "error" },
   },
   {
+    // Config files that run under plain Node CommonJS (not bundled, not
+    // type-checked against the browser/DOM lib), so `module`/`require`
+    // are real globals here, not undeclared variables.
+    files: ["*.cjs"],
+    languageOptions: {
+      globals: { module: "readonly", require: "readonly" },
+    },
+  },
+  {
     ignores: [
       ".next/**",
       "node_modules/**",
