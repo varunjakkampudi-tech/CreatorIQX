@@ -50,3 +50,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     );
   },
 );
+
+// TEMPORARY seeded violation for P0-012 gate verification - reverted before merge.
+export const __seededAny: any = 1;
+
+// TEMPORARY seeded violation for P0-012 gate verification (forbidden import
+// src/components/ui -> src/app) - reverted before merge.
+import CspCheckPage from "@/app/csp-check/page";
+void CspCheckPage;
