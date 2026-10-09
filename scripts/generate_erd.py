@@ -158,7 +158,9 @@ relay worker).
 
 
 def write() -> None:
-    OUTPUT.write_text(_render(), encoding="utf-8")
+    # Bytes, not write_text: on Windows write_text emits CRLF, which the repo's
+    # mixed-line-ending hook rejects. The committed document uses LF.
+    OUTPUT.write_bytes(_render().encode("utf-8"))
     print(f"Wrote {OUTPUT.relative_to(REPO_ROOT)}")
 
 
