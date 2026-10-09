@@ -31,11 +31,16 @@ WORKDIR /app
 # Dependencies-only layer, cached on the lockfile. Unlike apps/api/Dockerfile,
 # this still needs apps/api/src: creatoriqx-worker depends on creatoriqx-api
 # (a real workspace dependency, not just the --no-install-project target), so
-# uv must be able to build it even in this "dependencies" sync.
+# uv must be able to build it even in this "dependencies" sync. apps/mcp-server
+# isn't a dependency of creatoriqx-worker, but uv needs every workspace member
+# declared in the root pyproject.toml to exist on disk, so its pyproject.toml
+# is copied even though its source never is (same reasoning apps/api/Dockerfile
+# already documents for apps/worker).
 COPY pyproject.toml uv.lock ./
 COPY apps/api/pyproject.toml apps/api/README.md apps/api/
 COPY apps/api/src apps/api/src
 COPY apps/worker/pyproject.toml apps/worker/pyproject.toml
+COPY apps/mcp-server/pyproject.toml apps/mcp-server/pyproject.toml
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --no-editable --package creatoriqx-worker
 

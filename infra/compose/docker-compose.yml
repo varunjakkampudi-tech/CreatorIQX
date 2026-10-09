@@ -131,7 +131,13 @@ services:
       # response - but *any* response at all means the server is listening,
       # which is all a healthcheck needs. A plain TCP connect check avoids
       # having to special-case that expected HTTP error status.
-      test: ["CMD", "python3", "-c", "import socket; socket.create_connection(('127.0.0.1', 8000), timeout=3).close()"]
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import socket; socket.create_connection(('127.0.0.1', 8000), timeout=3).close()",
+        ]
       interval: 10s
       timeout: 5s
       retries: 15

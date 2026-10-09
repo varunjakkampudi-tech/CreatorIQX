@@ -8,8 +8,9 @@
 #
 # Build context MUST be the repository root, not apps/api, because this
 # is a uv workspace member and needs the root pyproject.toml + uv.lock
-# plus apps/worker (a workspace dependency isn't built here, but uv
-# resolves the whole workspace graph even when syncing one package):
+# plus every other workspace member's pyproject.toml (apps/worker,
+# apps/mcp-server) - a workspace dependency isn't built here, but uv
+# resolves the whole workspace graph even when syncing one package:
 #   docker build -f apps/api/Dockerfile -t creatoriqx-api .
 
 ARG PYTHON_VERSION=3.14
@@ -35,14 +36,15 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY apps/api/pyproject.toml apps/api/pyproject.toml
 COPY apps/worker/pyproject.toml apps/worker/pyproject.toml
+COPY apps/mcp-server/pyproject.toml apps/mcp-server/pyproject.toml
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --no-editable --package creatoriqx-api
 
 # Now the real source, then re-sync to install the project itself.
-# apps/worker's own pyproject.toml is already present above (uv needs every
-# workspace member declared in the root pyproject.toml to exist on disk),
-# but creatoriqx-api does not depend on creatoriqx-worker, so its source is
-# never copied into this image.
+# Every other workspace member's own pyproject.toml is already present above
+# (uv needs every workspace member declared in the root pyproject.toml to
+# exist on disk), but creatoriqx-api does not depend on creatoriqx-worker or
+# creatoriqx-mcp-server, so their source is never copied into this image.
 COPY apps/api apps/api
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable --package creatoriqx-api
