@@ -254,8 +254,8 @@ unprotected route is asserted to make the harness fail.
 flowchart LR
     doc["app.openapi() paths"] --> split{"In EXEMPT?"}
     split -- yes --> reason["Skipped, with a recorded reason"]
-    split -- no --> call["Call as a non-member of the session's workspace"]
-    call --> judge{"401, 403 or 404?"}
+    split -- no --> probe["Call as a non-member of the session's workspace"]
+    probe --> judge{"401, 403 or 404?"}
     judge -- yes --> ok["Isolated"]
     judge -- no --> fail["Harness fails: tenant isolation hole"]
 ```
