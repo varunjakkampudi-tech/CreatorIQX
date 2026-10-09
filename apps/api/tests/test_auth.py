@@ -44,6 +44,7 @@ from creatoriqx_api.modules.workspaces.infrastructure.memory_store import (
     InMemoryPersonalWorkspaceStore,
 )
 from creatoriqx_api.platform.health import HealthCheck
+from creatoriqx_api.platform.rate_limit import InMemoryTokenBucketLimiter
 from creatoriqx_api.settings import Settings
 
 _TEST_POLICY = SessionPolicy(
@@ -338,6 +339,9 @@ def _make_client(
     app.state.session_service = SessionService(store, _TEST_POLICY)
     # Bootstrap in memory: the route tests need no Postgres (P0-053).
     app.state.bootstrap_service = WorkspaceBootstrapService(InMemoryPersonalWorkspaceStore())
+    # In-memory rate limiter: no Redis needed, and a fresh bucket per test
+    # (P0-055 has its own dedicated tests for the limiting behavior itself).
+    app.state.rate_limiter = InMemoryTokenBucketLimiter()
     # Override the auth service with our fake provider.
     app.state.auth_service = AuthService(
         provider=provider,

@@ -40,6 +40,7 @@ from creatoriqx_api.platform.errors import install_error_handlers
 from creatoriqx_api.platform.health import HealthCheck, PostgresCheck, RedisCheck, run_checks
 from creatoriqx_api.platform.logging import configure_logging
 from creatoriqx_api.platform.middleware import CorrelationMiddleware
+from creatoriqx_api.platform.rate_limit import RedisTokenBucketLimiter
 from creatoriqx_api.platform.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from creatoriqx_api.settings import Settings, get_settings
 
@@ -161,3 +162,4 @@ def _wire_sessions(app: FastAPI, settings: Settings, redis: Redis) -> None:
     app.state.settings = settings
     app.state.key_value_store = store
     app.state.session_service = SessionService(store, policy)
+    app.state.rate_limiter = RedisTokenBucketLimiter(redis)

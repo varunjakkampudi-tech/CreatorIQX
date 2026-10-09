@@ -19,8 +19,12 @@ from typing import Annotated
 from fastapi import Depends, Request, Response
 
 from creatoriqx_api.modules.identity.application.session_service import SessionService
-from creatoriqx_api.modules.identity.domain.errors import SessionRequiredError
+from creatoriqx_api.modules.identity.domain.errors import (
+    RateLimitExceededError,
+    SessionRequiredError,
+)
 from creatoriqx_api.modules.identity.domain.session import Session
+from creatoriqx_api.platform.rate_limit import RateLimiter
 
 SESSION_COOKIE = "__Host-creatoriqx_session"
 FLOW_COOKIE = "creatoriqx_oidc_flow"
@@ -101,3 +105,39 @@ def clear_flow_cookie(response: Response) -> None:
         httponly=True,
         samesite="lax",
     )
+
+
+def get_rate_limiter(request: Request) -> RateLimiter:
+    limiter: RateLimiter = request.app.state.rate_limiter
+    return limiter
+
+
+RateLimiterDep = Annotated[RateLimiter, Depends(get_rate_limiter)]
+
+
+async def enforce_auth_rate_limit(request: Request, limiter: RateLimiterDep) -> None:
+    """Token-bucket limit on /auth/login and /auth/callback (P0-055).
+
+    Two independent buckets: always by client IP (the only identity known
+    before login succeeds), and additionally by session id when a session
+    cookie is present (an already-signed-in browser hammering the endpoint).
+    Either bucket running out raises a 429 problem+json with Retry-After.
+    """
+    settings = request.app.state.settings
+    capacity = settings.auth_rate_limit_capacity
+    refill_per_second = capacity / settings.auth_rate_limit_window_seconds
+
+    client_ip = request.client.host if request.client else "unknown"
+    ip_result = await limiter.check(
+        f"auth:ip:{client_ip}", capacity=capacity, refill_per_second=refill_per_second
+    )
+    if not ip_result.allowed:
+        raise RateLimitExceededError(ip_result.retry_after_seconds)
+
+    session_id = request.cookies.get(SESSION_COOKIE)
+    if session_id:
+        session_result = await limiter.check(
+            f"auth:session:{session_id}", capacity=capacity, refill_per_second=refill_per_second
+        )
+        if not session_result.allowed:
+            raise RateLimitExceededError(session_result.retry_after_seconds)

@@ -51,3 +51,18 @@ class CSRFTokenError(DomainError):
     status = 403
     title = "Invalid CSRF token"
     code = "csrf-token-invalid"
+
+
+class RateLimitExceededError(DomainError):
+    """A rate-limit bucket (spec §6, §10; P0-055) ran out of tokens."""
+
+    status = 429
+    title = "Too many requests"
+    code = "rate-limited"
+
+    def __init__(self, retry_after_seconds: int) -> None:
+        super().__init__(
+            detail=f"Retry after {retry_after_seconds} seconds",
+            headers={"Retry-After": str(retry_after_seconds)},
+        )
+        self.retry_after_seconds = retry_after_seconds

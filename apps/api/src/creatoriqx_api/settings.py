@@ -81,6 +81,17 @@ class Settings(BaseSettings):
         default=12, ge=1, le=168, description="Sign out this long after login, regardless"
     )
 
+    # Auth rate limiting (P0-055): a Redis token bucket per IP and, when a
+    # session cookie is present, per session - applied to /auth/login and
+    # /auth/callback. capacity is the burst size; window_seconds sets the
+    # sustained refill rate (capacity / window_seconds tokens per second).
+    auth_rate_limit_capacity: int = Field(
+        default=10, ge=1, description="Burst size for the auth-endpoint token bucket"
+    )
+    auth_rate_limit_window_seconds: int = Field(
+        default=60, gt=0, description="Window the bucket fully refills over"
+    )
+
     @property
     def allowed_emails_set(self) -> frozenset[str]:
         """Parse the comma-separated allow-list into a frozen set."""

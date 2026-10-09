@@ -7,6 +7,8 @@ become a generic 500 problem with no stack trace or internal detail.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -23,20 +25,31 @@ class DomainError(Exception):
 
     ``status`` is the HTTP status; ``title`` is a short, stable, human-readable
     summary; ``code`` is a machine-readable slug used as the problem ``type``.
+    ``headers``, when set, are added to the response (for example
+    ``Retry-After`` on a rate-limit error).
     """
 
     status: int = 400
     title: str = "Request could not be processed"
     code: str = "domain-error"
 
-    def __init__(self, detail: str | None = None) -> None:
+    def __init__(
+        self, detail: str | None = None, headers: Mapping[str, str] | None = None
+    ) -> None:
         super().__init__(detail or self.title)
         self.detail = detail
+        self.headers = headers
 
 
-def _problem(status: int, title: str, code: str, **extra: object) -> JSONResponse:
+def _problem(
+    status: int,
+    title: str,
+    code: str,
+    headers: Mapping[str, str] | None = None,
+    **extra: object,
+) -> JSONResponse:
     body = {"type": f"/problems/{code}", "title": title, "status": status, **extra}
-    return JSONResponse(body, status_code=status, media_type=PROBLEM_JSON)
+    return JSONResponse(body, status_code=status, media_type=PROBLEM_JSON, headers=headers)
 
 
 def install_error_handlers(app: FastAPI) -> None:
@@ -44,7 +57,7 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(DomainError)
     async def _domain(_request: Request, exc: DomainError) -> JSONResponse:
-        return _problem(exc.status, exc.title, exc.code, detail=exc.detail)
+        return _problem(exc.status, exc.title, exc.code, headers=exc.headers, detail=exc.detail)
 
     @app.exception_handler(RequestValidationError)
     async def _validation(_request: Request, exc: RequestValidationError) -> JSONResponse:

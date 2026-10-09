@@ -21,6 +21,7 @@ from creatoriqx_api.modules.identity.api.dependencies import (
     SESSION_COOKIE,
     SessionServiceDep,
     clear_flow_cookie,
+    enforce_auth_rate_limit,
     set_flow_cookie,
     set_session_cookie,
 )
@@ -80,7 +81,11 @@ def _flow_from_record(record: dict[str, str]) -> LoginFlowState:
     )
 
 
-@router.get("/login", summary="Start the Google OIDC login flow")
+@router.get(
+    "/login",
+    summary="Start the Google OIDC login flow",
+    dependencies=[Depends(enforce_auth_rate_limit)],
+)
 async def login(
     request: Request,
     auth_service: AuthServiceDep,
@@ -99,7 +104,12 @@ async def login(
     return response
 
 
-@router.get("/callback", name="auth_callback", summary="Finish the Google OIDC login flow")
+@router.get(
+    "/callback",
+    name="auth_callback",
+    summary="Finish the Google OIDC login flow",
+    dependencies=[Depends(enforce_auth_rate_limit)],
+)
 async def callback(
     request: Request,
     auth_service: AuthServiceDep,
