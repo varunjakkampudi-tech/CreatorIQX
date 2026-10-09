@@ -57,7 +57,13 @@ def celery_app() -> Iterator[object]:
     # ETA/timer issue specific to this harness by forcing an immediate
     # (no-eta) retry instead.
     original_retry_backoff = tasks_module.ops_flaky.retry_backoff
+    original_retry_delay = tasks_module.ops_flaky.default_retry_delay
     tasks_module.ops_flaky.retry_backoff = False
+    # retry_backoff=False alone falls back to Task.default_retry_delay
+    # (180s!), not an immediate retry - force that to 0 too, so a retry
+    # with truly no eta at all is possible, ruling out ETA/timer delay
+    # entirely as the explanation for the previous no-second-attempt runs.
+    tasks_module.ops_flaky.default_retry_delay = 0
     # The default ping check now blocks start_worker() until the embedded
     # worker has actually started consuming, so the test never sends a task
     # before the worker is listening for one.
@@ -66,6 +72,7 @@ def celery_app() -> Iterator[object]:
             yield app
     finally:
         tasks_module.ops_flaky.retry_backoff = original_retry_backoff
+        tasks_module.ops_flaky.default_retry_delay = original_retry_delay
 
 
 def test_enqueue_via_port_job_completes_result_observed(celery_app: object) -> None:
