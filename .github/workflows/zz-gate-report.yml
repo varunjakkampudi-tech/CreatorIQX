@@ -74,7 +74,12 @@ jobs:
           section "prettier"          pnpm run format:check
           section "openapi drift"     uv run python scripts/export_openapi.py --check
           section "erd drift"         uv run python scripts/generate_erd.py --check
-          section "pytest"            uv run python scripts/dev.py test
+          # pytest: keep the summary even when green, for the ticket evidence.
+          out=$(uv run python scripts/dev.py test 2>&1)
+          code=$?
+          printf '### pytest: %s\n\n```\n%s\n```\n\n' \
+            "$([ $code -eq 0 ] && echo PASS || echo "FAIL (exit $code)")" \
+            "$(printf '%s' "$out" | grep -E "passed|failed|Total coverage|Required test|domain and application" | tail -20)" >> "$report"
 
           # Mermaid rendering, the same check the docs workflow runs.
           echo '{"args":["--no-sandbox"]}' > "$RUNNER_TEMP/puppeteer.json"
