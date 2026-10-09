@@ -38,12 +38,14 @@ Every dependency is checked for its latest stable version **at install time** (s
 | @eslint/js, typescript-eslint | 10.0.1, 8.71.1 | 2026-10-09 | apps/web dev | Recommended rule sets for the flat config |
 | @next/eslint-plugin-next | 16.4.0 | 2026-10-09 | apps/web dev | Next's own lint rules, added directly to the flat config (no `eslint-config-next` compat wrapper needed) |
 
-A light/dark screenshot step for P0-080 was attempted with `npx playwright@1.64.0` and `npx wait-on@9` (the way `docs.yml` fetches `@mermaid-js/mermaid-cli`), but a backgrounded `next start` process hung the CI step past its timeout; it was dropped rather than kept flaky (see `docs/PROGRESS.md`). Playwright becomes a real devDependency in P0-083, where the Playwright+axe harness needs a reliable browser automation setup anyway.
+A light/dark screenshot step for P0-080 was attempted with `npx playwright@1.64.0` and `npx wait-on@9` (the way `docs.yml` fetches `@mermaid-js/mermaid-cli`), but a backgrounded `next start` process hung the CI step past its timeout; it was dropped rather than kept flaky (see `docs/PROGRESS.md`). P0-082 adds Playwright back as a real devDependency, using its own `webServer` config (which starts and stops the server itself) instead of a hand-backgrounded process, which is also the pattern P0-083's Playwright+axe harness builds on.
 
 | openapi-typescript | 7.13.0 | 2026-10-09 | packages/api-client dev | Generates `src/schema.d.ts` from `openapi.json` (P0-081) |
 | openapi-fetch | 0.17.0 | 2026-10-09 | packages/api-client, apps/web | Typed fetch client over the generated schema |
 | openapi-react-query | 0.5.4 | 2026-10-09 | apps/web | TanStack Query hooks (`$api.useQuery(...)`) typed from the same schema; peer range requires `openapi-fetch ^0.17.0` and `@tanstack/react-query ^5.80.0`, both satisfied |
 | @tanstack/react-query | 5.104.1 | 2026-10-09 | apps/web | Query provider and hooks (P0-081) |
+| next-intl | 4.14.9 | 2026-10-09 | apps/web | i18n (P0-082); peer range accepts next `^16.0.0` and react `^19.0.0` |
+| @playwright/test | 1.64.0 | 2026-10-09 | apps/web dev | The P0-082 CSP acceptance test (`tests/e2e/csp.spec.ts`); `webServer` in `playwright.config.ts` starts and stops `next build && next start` itself rather than a hand-backgrounded process, avoiding the P0-080 hang |
 
 ## Python packages (dev group, root `pyproject.toml`)
 

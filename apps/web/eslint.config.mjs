@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import nextPlugin from "@next/eslint-plugin-next";
 import tseslint from "typescript-eslint";
+import noRawJsxText from "./eslint-rules/no-raw-jsx-text.mjs";
 
 /**
  * Forbids a raw hex color literal (#fff, #4f46e5, ...) anywhere in a
@@ -35,6 +36,11 @@ export default tseslint.config(
   {
     files: ["src/**/*.ts", "src/**/*.tsx"],
     ...noRawHexInComponents,
+  },
+  {
+    files: ["src/**/*.tsx"],
+    plugins: { local: noRawJsxText },
+    rules: { "local/no-raw-jsx-text": "error" },
   },
   {
     ignores: [".next/**", "node_modules/**", "next-env.d.ts"],
