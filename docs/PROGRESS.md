@@ -4,7 +4,7 @@ Read this file at the start of every session. Update it at the end of every sess
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-10-09 (session 2, Linux sandbox) — P0-110 scorecard run, Phase 0 gate PASSES, tagging `v0.1.0` |
+| Last updated | 2026-10-09 (session 2, Linux sandbox) — P0-110 scorecard run, Phase 0 gate PASSES; `v0.1.0` tag needs the owner (this session's proxy refuses git/tag and release writes) |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation gate PASSED (`v0.1.0`, P0-110).** Phase 1A not started - the owner must unblock P0-052 and P0-090 first (plan approved by owner 2026-10-08) |
 | Last PASS ticket | **P0-110** — E13 Phase gate, Phase 0 quality scorecard run and gate decision recorded (also PASS: P0-001 to P0-007, P0-010 to P0-013, P0-020, P0-021, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-053, P0-054, P0-060, P0-080 to P0-083, P0-100 to P0-102) |
@@ -62,6 +62,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | OQ-15 | Disable the old YouTube client secret in Google Cloud (it was shared in chat) | Security hygiene |
 | P0-052 | Run the real Google login once on the local stack, in Chrome and Edge at minimum | Closes P0-052 (BLOCKED until then) |
 | P0-090 | Written approval of the wireframes before any UI code | E10, E11 |
+| P0-110 | Push the `v0.1.0` tag (this sandbox's proxy refuses `git/tags`/`git/refs`/`/releases` writes): `git tag -a v0.1.0 ed1e17c750420857a0fe85f77fdf8aa6b3bd253d -m "v0.1.0 - Phase 0 (Foundation) gate PASSED"` then `git push origin v0.1.0`, or create the release from the GitHub web UI targeting that commit | Marks the Phase 0 release point |
 
 ## Decisions made
 
@@ -123,18 +124,21 @@ Read this file at the start of every session. Update it at the end of every sess
 | 2026-10-09 | CodeQL (`codeql.yml`) runs report-only in Phase 0 (no required check yet) even though it's free on this public personal-account repo (OQ-09) - findings need a first triage pass before the check can block real work | Decision, P0-102 |
 | 2026-10-09 | First `ci-security` run failed: `pip-audit`'s second invocation had no `|| true`, so a real finding failed the whole job even though pip-audit is meant to be report-only in Phase 0. Fixed by switching both the pip-audit and pnpm-audit steps to `continue-on-error: true` (visible red step, job still succeeds) instead of silently swallowing the exit code | Defect found by a real CI failure while building P0-102 |
 | 2026-10-09 | P0-103 recorded BLOCKED: it needs P0-092 (app shell/dashboard), which needs P0-091 (login screen), which needs P0-090's wireframe approval (still owner-pending) - CLAUDE.md forbids UI code before that approval, so there is nothing to build | Decision/finding, P0-103 |
-| 2026-10-09 | P0-110 Phase 0 gate: scorecard run against spec §17, STRIDE v0 re-reviewed (no new threat; T-S4 and T-D1 stay open pending P0-090/P0-103 and P0-055), **gate decision PASS** - every row applicable to a Foundation-only phase passed, every other row is N/A with a named future phase, the two open BLOCKED items (P0-052, P0-090) are owner actions. `v0.1.0` tagged. Full scorecard in the section below | Gate decision, P0-110 |
+| 2026-10-09 | P0-110 Phase 0 gate: scorecard run against spec §17, STRIDE v0 re-reviewed (no new threat; T-S4 and T-D1 stay open pending P0-090/P0-103 and P0-055), **gate decision PASS** - every row applicable to a Foundation-only phase passed, every other row is N/A with a named future phase, the two open BLOCKED items (P0-052, P0-090) are owner actions. Full scorecard in the section below | Gate decision, P0-110 |
+| 2026-10-09 | `v0.1.0` tag could not be pushed: this session's git proxy and the GitHub REST API both refuse writes to `git/refs`, `git/tags` and `/releases` (confirmed via three independent attempts - `git push`, `POST .../git/tags`, `POST .../releases` - each returning an explicit 403 naming this as a session-type restriction, not a transient failure). Added to "Owner actions pending" with the exact commands to run | Environment limitation found while closing out P0-110 |
 
 ## Exact next step
 
 **Phase 0 is done.** P0-110 ran the §17 quality scorecard and recorded the
-gate decision: PASS (see "Phase 0 scorecard" above). `v0.1.0` is tagged.
+gate decision: PASS (see "Phase 0 scorecard" above). `v0.1.0` is **not yet
+tagged on the remote** - this sandbox's proxy refuses `git/tags`/`git/refs`/
+`/releases` writes; see "Owner actions pending" for the exact commands.
 Every ticket in the Phase 0 backlog is now at a terminal state: PASS,
 BLOCKED (owner action), or deferred to the start of Phase 1A by the
 Option-B time-box decision. There is nothing further to build in Phase 0
 without the owner.
 
-**This session stops here and waits on the owner for two things:**
+**This session stops here and waits on the owner for three things:**
 
 1. **P0-052** - run the real Google login once on the local stack (Chrome and
    Edge at minimum), so `oidc_client_id`/`secret` are real and login is
@@ -142,8 +146,12 @@ without the owner.
 2. **P0-090** - written approval of the wireframes (login, app shell, empty
    dashboard, loading/error/mobile states), so P0-091/P0-092/P0-103 and
    Phase 1A/E10/E11 UI work can start. CLAUDE.md forbids UI code before this.
+3. **`v0.1.0`** - push the tag (or create the release from the GitHub web
+   UI); see "Owner actions pending" above for the exact commands. This
+   sandbox's proxy refuses the write, so no amount of retrying from here
+   will succeed - it needs to run somewhere with normal push access.
 
-Once the owner does either or both, the exact next steps are:
+Once the owner does any of these, the exact next steps are:
 
 - If P0-052 is resolved: run P0-022's actual acceptance test (fresh clone,
   `dev.py up-full`, timed walkthrough to a logged-in dashboard) and flip its
@@ -219,7 +227,32 @@ tracked openly rather than hidden.
 **Gate decision:** Phase 0 **PASSES**. Every row applicable to a Foundation-only
 phase is PASS; every N/A row names the phase it moves to; the two open BLOCKED
 items (P0-052, P0-090) are owner actions, not defects, and are tracked above
-rather than hidden. Proceeding to tag `v0.1.0` and - once the owner unblocks
-P0-052/P0-090 - resuming toward Phase 1A (with the Option-B deferred tickets
-P0-055, P0-061, P0-062, P0-070 built at the start of it, per the time-box
-decision).
+rather than hidden.
+
+**The `v0.1.0` tag could not be pushed from this sandbox.** This session's git
+proxy and the GitHub REST API both refuse writes to `git/refs`, `git/tags` and
+`/releases` ("Write access to this GitHub API path is not permitted through
+this proxy" / "Creating, editing, or deleting releases is not permitted for
+this session type") - a hard environment restriction on this session type,
+not an owner-action blocker like P0-052/P0-090. An annotated tag object
+exists locally, pointing at the merge commit for this scorecard
+(`ed1e17c750420857a0fe85f77fdf8aa6b3bd253d`), with the full message below, but
+`git push origin v0.1.0` fails with an HTTP 403 from GitHub itself (the same
+family of error seen all session on branch deletes, except a tag's *absence*
+on the remote is not safely ignorable the way a stale branch ref is - someone
+with push access needs to actually create it). **Owner action needed:** run
+either of:
+
+```
+git tag -a v0.1.0 ed1e17c750420857a0fe85f77fdf8aa6b3bd253d -m "v0.1.0 - Phase 0 (Foundation) gate PASSED"
+git push origin v0.1.0
+```
+
+or create release `v0.1.0` from the GitHub web UI, targeting commit
+`ed1e17c750420857a0fe85f77fdf8aa6b3bd253d` (the "docs: run the P0-110 Phase 0
+quality scorecard, gate PASSES" merge). The full prepared tag message is kept
+in this session's history if a richer release description is wanted.
+
+Once the tag exists, resume toward Phase 1A once the owner unblocks
+P0-052/P0-090 (with the Option-B deferred tickets P0-055, P0-061, P0-062,
+P0-070 built at the start of it, per the time-box decision).
