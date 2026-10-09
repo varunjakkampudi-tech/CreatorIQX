@@ -15,7 +15,8 @@ module.exports = {
     {
       name: "no-circular",
       severity: "error",
-      comment: "Circular imports make modules hard to reason about and to test in isolation.",
+      comment:
+        "Circular imports make modules hard to reason about and to test in isolation.",
       from: {},
       to: { circular: true },
     },
