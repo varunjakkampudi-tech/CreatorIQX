@@ -71,6 +71,10 @@ jobs:
           cp .env.example .env
           docker compose --env-file .env -f infra/compose/docker-compose.yml up --detach --wait --wait-timeout 120 || true
           { uv run python scripts/dev.py test || true; } >> /tmp/lint_out.txt 2>&1
+          echo "---TASKQUEUE VERBOSE---" >> /tmp/lint_out.txt
+          {
+            uv run pytest tests/integration/test_task_queue.py -v -s --log-cli-level=INFO || true
+          } >> /tmp/lint_out.txt 2>&1
           split -b 60000 -d -a 3 /tmp/lint_out.txt /tmp/lintout_part_
           ls /tmp/lintout_part_* || true
 

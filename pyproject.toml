@@ -164,8 +164,6 @@ source_modules = [
     "creatoriqx_api.modules.audit",
     "creatoriqx_api.modules.telemetry",
     "creatoriqx_api.modules.jobs.domain",
-    "creatoriqx_api.modules.jobs.application",
-    "creatoriqx_api.modules.jobs.api",
 ]
 forbidden_modules = ["celery"]
 allow_indirect_imports = true
