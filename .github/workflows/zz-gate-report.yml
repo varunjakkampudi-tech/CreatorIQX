@@ -4,15 +4,23 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
   report:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    # Only run on branches of this repo (not forks), since it pushes back to
+    # the PR's head branch to resolve pnpm-lock.yaml / Prettier formatting -
+    # the sandbox this project is built from cannot reach the npm registry,
+    # so this is the only way to get those files resolved. Temporary: delete
+    # once P0-083 is green and merged.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - uses: pnpm/action-setup@v6
 
@@ -29,6 +37,24 @@ jobs:
           echo "exit=$?" >> "$GITHUB_OUTPUT"
           tail -c 55000 /tmp/install.log > /tmp/install.tail.log
 
+      - name: Fix formatting (root Prettier, every workspace)
+        if: always()
+        run: pnpm run format > /tmp/format.log 2>&1 || true
+
+      - name: Commit and push resolved lockfile / formatting back to the PR branch
+        if: always()
+        run: |
+          set +e
+          git config user.name "zz-gate-report[bot]"
+          git config user.email "zz-gate-report@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: resolve pnpm-lock.yaml and Prettier formatting (zz-gate-report)"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          else
+            echo "nothing to commit"
+          fi
+
       - name: Post install output as PR comment
         if: always()
         run: |
@@ -38,15 +64,11 @@ jobs:
             echo '```'
             cat /tmp/install.tail.log
             echo '```'
+            echo "### format (last 4000 bytes)"
+            echo '```'
+            tail -c 4000 /tmp/format.log
+            echo '```'
           } > /tmp/comment.md
           gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
         env:
           GH_TOKEN: ${{ github.token }}
-
-      - name: Upload resolved lockfile
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: zz-pnpm-lock
-          path: pnpm-lock.yaml
-          retention-days: 7
