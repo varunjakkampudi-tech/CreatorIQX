@@ -176,7 +176,7 @@ sequenceDiagram
     Cb->>BS: ensure_personal_workspace(subject, email)
     BS->>BS: normalise email, generate UUIDv7 ids
     BS->>ST: ensure(BootstrapCommand)
-    ST->>PG: BEGIN; pg_advisory_xact_lock(subject)
+    ST->>PG: BEGIN, then pg_advisory_xact_lock(subject)
     ST->>PG: find users by google_sub
     alt first login
         ST->>PG: INSERT users (context: no workspace)
@@ -184,7 +184,8 @@ sequenceDiagram
     end
     ST->>PG: find owner membership (context: user)
     alt no workspace yet
-        ST->>PG: INSERT workspaces, memberships, outbox_events (context: new workspace)
+        ST->>PG: INSERT workspaces and flush first (context: new workspace)
+        ST->>PG: INSERT memberships and outbox_events (context: new workspace)
         ST->>PG: INSERT audit_log workspace.created (context: new workspace)
     end
     ST->>PG: INSERT audit_log auth.login_succeeded (context: workspace)
@@ -206,7 +207,7 @@ flowchart TD
     email -- no --> mkuser["Create user, audit user.created under NO_WORKSPACE"]
     known -- yes --> member
     mkuser --> member{"Owner membership exists?"}
-    member -- no --> mkws["Create workspace, owner membership, outbox workspace.created under the NEW workspace id"]
+    member -- no --> mkws["Insert workspace first, then owner membership and outbox workspace.created, under the NEW workspace id"]
     member -- yes --> reuse["Reuse its workspace id, create nothing"]
     mkws --> audit["Audit auth.login_succeeded under the workspace"]
     reuse --> audit
