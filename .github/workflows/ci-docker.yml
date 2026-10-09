@@ -1,0 +1,60 @@
+name: ci-docker
+
+# Builds the production images for api, worker and web (P0-021) and proves
+# each one runs as a non-root user. The sandbox this project is built in has
+# no local Docker daemon, so this workflow is the only place `docker build`
+# and `docker run` actually execute; it is required evidence for the
+# ticket's acceptance test ("All images build; `docker run ... id -u` is not
+# 0"), not an optional extra.
+
+on:
+  push:
+    branches: [main, "ci/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  images:
+    name: Build and verify non-root (api, worker, web)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            dockerfile: apps/api/Dockerfile
+            image: creatoriqx-api:ci
+          - name: worker
+            dockerfile: apps/worker/Dockerfile
+            image: creatoriqx-worker:ci
+          - name: web
+            dockerfile: apps/web/Dockerfile
+            image: creatoriqx-web:ci
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build (${{ matrix.name }})
+        run: |
+          docker build \
+            --file ${{ matrix.dockerfile }} \
+            --tag ${{ matrix.image }} \
+            .
+
+      - name: Verify non-root (id -u is not 0)
+        run: |
+          uid="$(docker run --rm --entrypoint id ${{ matrix.image }} -u)"
+          echo "Container uid: $uid"
+          if [ "$uid" = "0" ]; then
+            echo "::error::${{ matrix.image }} runs as root (uid 0)"
+            exit 1
+          fi
+
+      - name: Inspect image size
+        run: docker image inspect ${{ matrix.image }} --format '{{ .Size }}' | numfmt --to=iec-i --suffix=B

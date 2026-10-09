@@ -11,6 +11,10 @@ const apiOrigin = process.env.API_ORIGIN ?? "http://127.0.0.1:8000";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   typedRoutes: true,
+  // Minimal self-contained server bundle (.next/standalone) for the
+  // production Docker image (P0-021): copying it plus .next/static and
+  // public/ into the final stage avoids shipping full node_modules.
+  output: "standalone",
   async rewrites() {
     return [
       {
