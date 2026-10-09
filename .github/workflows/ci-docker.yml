@@ -113,7 +113,7 @@ jobs:
             echo
             curl -fsS http://127.0.0.1:3000/ | head -c 200
             echo
-            docker compose -f infra/compose/docker-compose.yml --profile full \
+            docker compose --env-file .env -f infra/compose/docker-compose.yml --profile full \
               exec -T worker celery -A \
               creatoriqx_api.modules.jobs.infrastructure.celery_app.celery_app inspect ping
           } > /tmp/smoke.log 2>&1
