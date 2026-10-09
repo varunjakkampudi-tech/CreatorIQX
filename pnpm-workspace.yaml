@@ -9,6 +9,9 @@ packages:
 # tooling (added when P0-082 added next-intl and @playwright/test):
 # @parcel/watcher compiles its native file-watcher binary, @swc/core
 # compiles the Rust-based compiler Next.js's own build already depends on.
+# esbuild (added when P0-083 added Storybook/Vite/Vitest) downloads its own
+# prebuilt native binary for the host platform during install.
 allowBuilds:
   "@parcel/watcher": true
   "@swc/core": true
+  esbuild: true
