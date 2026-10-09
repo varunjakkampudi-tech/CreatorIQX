@@ -1,4 +1,6 @@
-"""Ports for the workspace bootstrap. Infrastructure implements them; the application never imports SQL.
+"""Ports for the workspace bootstrap.
+
+Infrastructure implements them; the application never imports SQL.
 
 The application generates every identifier before calling the store, so the
 store never needs a privileged path to mint ids.

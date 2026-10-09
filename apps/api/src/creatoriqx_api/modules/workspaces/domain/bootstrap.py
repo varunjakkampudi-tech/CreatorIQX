@@ -25,7 +25,10 @@ _FALLBACK_NAME = "Personal workspace"
 
 
 class IdentityConflictError(DomainError):
-    """The email is already bound to a different Google subject, or a race lost the uniqueness check."""
+    """The email already belongs to a different Google subject.
+
+    Also raised when a concurrent login loses the uniqueness check.
+    """
 
     status = 409
     title = "Identity conflict"

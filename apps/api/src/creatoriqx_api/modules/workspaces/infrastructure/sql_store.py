@@ -130,7 +130,17 @@ async def _create_personal_workspace(
 ) -> uuid.UUID:
     workspace_id = command.workspace_id
     await set_tenant_context(session, workspace_id=workspace_id, user_id=user_id)
+
+    # The workspace row must reach the database before the membership that
+    # references it. Nothing here declares a ``relationship()``, and without one
+    # SQLAlchemy orders a flush by mapper sort key (module and class name), not
+    # by foreign key: ``...workspaces.Membership`` sorts before
+    # ``...workspaces.Workspace``, so a single flush would insert the membership
+    # first and violate ``fk_memberships_workspace_id_workspaces``. Two flushes
+    # make the order explicit instead of depending on class names.
     session.add(Workspace(id=workspace_id, name=command.workspace_name))
+    await session.flush()
+
     session.add(
         Membership(
             id=command.membership_id,

@@ -53,7 +53,14 @@ tenant context, because every later request needs it to query anything.
    the same error. Accounts are never merged silently.
 8. **Audit detail carries no personal data.** Audit rows hold ids, action and
    correlation id only. The email is not written to the audit log.
-9. **The session carries the tenant.** `Session` stores `user_id` and `workspace_id`
+9. **Insert order is explicit, never inferred from foreign keys.** No ORM class in
+   this codebase declares a `relationship()`. Without one, a SQLAlchemy flush
+   orders inserts by mapper sort key (module path and class name), *not* by
+   foreign key, so `workspaces.Membership` sorts ahead of `workspaces.Workspace`
+   and a single flush inserts the child before the parent. The bootstrap
+   therefore flushes the workspace on its own before adding the membership. Any
+   future multi-table write must do the same, or declare a relationship.
+10. **The session carries the tenant.** `Session` stores `user_id` and `workspace_id`
    (ADR 0010). P0-054 reads them into the request-scoped tenant context.
 
 ## Consequences
@@ -63,6 +70,7 @@ tenant context, because every later request needs it to query anything.
 | Positive | No BYPASSRLS path exists for bootstrap; the runtime role does everything under forced RLS |
 | Positive | First-login races cannot create two workspaces for one person |
 | Positive | Audit and outbox evidence is written in the same transaction as the data it describes |
+| Negative | The bootstrap needs two flushes rather than one, because insert order is set explicitly (decision 9) |
 | Negative | The `workspaces` read policy runs a `memberships` sub-select, so workspace reads cost one extra index lookup. Acceptable at this scale; the unique `(user_id, workspace_id)` index covers it |
 | Negative | Sessions created before this change (none in production yet) have no tenant ids and must sign in again |
 | Negative | One workspace per user is created on first login. Multi-workspace selection arrives with P0-054 and the workspace switcher |
@@ -84,3 +92,6 @@ tenant context, because every later request needs it to query anything.
 - `tests/integration/test_workspace_bootstrap_db.py` (creatoriqx_test, runtime role): the first login writes user, workspace, owner membership, audit rows and outbox event; repeat login writes no second workspace; five concurrent first logins create exactly one workspace; a non-member cannot read another workspace; a conflicting email writes nothing; `workspaces` has forced RLS and its three policies.
 - `apps/api/tests/test_sessions.py`, `test_session_routes.py`: sessions carry `user_id` and `workspace_id`, and `/auth/session` returns them.
 - `apps/api/migrations`: migration 0005 round-trips (`dev.py` migration test).
+- The insert-order rule (decision 9) is covered by
+  `test_first_login_writes_user_workspace_membership_audit_and_outbox`, which failed
+  with `fk_memberships_workspace_id_workspaces` before the order was made explicit.
