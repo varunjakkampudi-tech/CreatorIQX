@@ -23,9 +23,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from creatoriqx_api.modules.audit.infrastructure.tables import AuditLog
+from creatoriqx_api.modules.identity.domain.roles import Role
 from creatoriqx_api.modules.identity.infrastructure.tables import User
 from creatoriqx_api.modules.jobs.infrastructure.tables import OutboxEvent
-from creatoriqx_api.modules.identity.domain.roles import Role
 from creatoriqx_api.modules.workspaces.application.ports import BootstrapCommand
 from creatoriqx_api.modules.workspaces.domain.bootstrap import (
     NO_WORKSPACE,

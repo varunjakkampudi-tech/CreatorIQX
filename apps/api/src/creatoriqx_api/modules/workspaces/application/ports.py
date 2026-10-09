@@ -31,4 +31,3 @@ class PersonalWorkspaceStore(Protocol):
 
     async def ensure(self, command: BootstrapCommand) -> BootstrapResult:
         """Create what is missing for ``command.subject`` and return the resolved ids."""
-

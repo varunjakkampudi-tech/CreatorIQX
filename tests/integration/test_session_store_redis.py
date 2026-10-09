@@ -20,6 +20,8 @@ pytestmark = pytest.mark.integration
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 POLICY = SessionPolicy(idle_timeout=timedelta(minutes=30), absolute_timeout=timedelta(hours=12))
+USER_ID = uuid.UUID(int=1)
+WORKSPACE_ID = uuid.UUID(int=2)
 
 
 @pytest.fixture
@@ -36,7 +38,12 @@ async def test_session_survives_across_service_instances(redis_client: Redis) ->
     # Two service instances stand in for two API workers sharing one Redis.
     worker_a = SessionService(RedisKeyValueStore(redis_client), POLICY)
     worker_b = SessionService(RedisKeyValueStore(redis_client), POLICY)
-    created = await worker_a.create(f"sub-{uuid.uuid4()}", "creator@example.com")
+    created = await worker_a.create(
+        subject=f"sub-{uuid.uuid4()}",
+        email="creator@example.com",
+        user_id=USER_ID,
+        workspace_id=WORKSPACE_ID,
+    )
     assert (await worker_b.authenticate(created.id)).email == "creator@example.com"
     await worker_b.end(created.id)
     with pytest.raises(SessionRequiredError):
@@ -45,7 +52,12 @@ async def test_session_survives_across_service_instances(redis_client: Redis) ->
 
 async def test_redis_enforces_the_absolute_expiry(redis_client: Redis) -> None:
     service = SessionService(RedisKeyValueStore(redis_client), POLICY)
-    created = await service.create("sub", "creator@example.com")
+    created = await service.create(
+        subject="sub",
+        email="creator@example.com",
+        user_id=USER_ID,
+        workspace_id=WORKSPACE_ID,
+    )
     ttl = await redis_client.ttl(f"session:{created.id}")
     assert 0 < ttl <= int(POLICY.absolute_timeout.total_seconds())
     await service.end(created.id)

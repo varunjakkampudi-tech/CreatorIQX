@@ -66,7 +66,12 @@ def _schema_at_head() -> None:
 
 @pytest.fixture
 async def engine() -> AsyncIterator[AsyncEngine]:
-    built = create_async_engine(_test_url("DATABASE_APP_URL"), pool_pre_ping=True)
+    # SQL_ECHO=1 prints every statement, which is how flush ordering is diagnosed.
+    built = create_async_engine(
+        _test_url("DATABASE_APP_URL"),
+        pool_pre_ping=True,
+        echo=bool(os.environ.get("SQL_ECHO")),
+    )
     yield built
     await built.dispose()
 
@@ -107,11 +112,15 @@ async def test_first_login_writes_user_workspace_membership_audit_and_outbox(
 ) -> None:
     subject, email = _new_identity()
     result = await service.ensure_personal_workspace(subject=subject, email=email)
-    assert result.user_created and result.workspace_created
+    assert result.user_created is True
+    assert result.workspace_created is True
 
     ws, user = result.workspace_id, result.user_id
     [(name,)] = await _read_as(
-        factory, workspace_id=ws, user_id=user, sql="SELECT name FROM workspaces WHERE id = :w",
+        factory,
+        workspace_id=ws,
+        user_id=user,
+        sql="SELECT name FROM workspaces WHERE id = :w",
         params={"w": ws},
     )
     assert name == personal_workspace_name(email)
@@ -166,7 +175,8 @@ async def test_repeat_login_returns_the_same_ids_and_writes_no_second_workspace(
 
     assert second.user_id == first.user_id
     assert second.workspace_id == first.workspace_id
-    assert second.user_created is False and second.workspace_created is False
+    assert second.user_created is False
+    assert second.workspace_created is False
 
     ws, user = first.workspace_id, first.user_id
     [(membership_count,)] = await _read_as(
@@ -182,7 +192,10 @@ async def test_repeat_login_returns_the_same_ids_and_writes_no_second_workspace(
         factory,
         workspace_id=ws,
         user_id=user,
-        sql="SELECT count(*) FROM audit_log WHERE workspace_id = :w AND action = 'auth.login_succeeded'",
+        sql=(
+            "SELECT count(*) FROM audit_log "
+            "WHERE workspace_id = :w AND action = 'auth.login_succeeded'"
+        ),
         params={"w": ws},
     )
     assert logins == 2
@@ -264,7 +277,9 @@ async def test_workspaces_table_has_forced_rls_and_its_three_policies() -> None:
         )
     finally:
         await conn.close()
-    assert row is not None and row["relrowsecurity"] and row["relforcerowsecurity"]
+    assert row is not None
+    assert row["relrowsecurity"] is True
+    assert row["relforcerowsecurity"] is True
     assert [p["policyname"] for p in policies] == [
         "workspaces_insert",
         "workspaces_read",

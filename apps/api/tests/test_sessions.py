@@ -46,9 +46,7 @@ def service(clock: FakeClock) -> SessionService:
     return SessionService(InMemoryKeyValueStore(clock), POLICY, clock)
 
 
-async def _open(
-    service: SessionService, subject: str = "s", email: str = "e@x.com"
-) -> Session:
+async def _open(service: SessionService, subject: str = "s", email: str = "e@x.com") -> Session:
     """Open a session for the fixture tenant (user and personal workspace ids)."""
     return await service.create(
         subject=subject, email=email, user_id=USER_ID, workspace_id=WORKSPACE_ID

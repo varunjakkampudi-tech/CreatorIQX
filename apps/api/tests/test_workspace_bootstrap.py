@@ -51,7 +51,7 @@ def service(store: InMemoryPersonalWorkspaceStore) -> WorkspaceBootstrapService:
 
 
 def test_no_workspace_sentinel_is_the_zero_uuid() -> None:
-    assert NO_WORKSPACE == uuid.UUID(int=0)
+    assert uuid.UUID(int=0) == NO_WORKSPACE
 
 
 def test_generated_ids_never_equal_the_sentinel() -> None:
