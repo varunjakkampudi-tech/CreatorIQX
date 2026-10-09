@@ -27,23 +27,27 @@ test.describe("Content Security Policy (P0-082)", () => {
     expect(firstCsp).not.toBe(secondCsp);
   });
 
-  test("an inline script without the nonce does not run", async ({ page }) => {
-    await page.goto("/");
-    await page.evaluate(() => {
-      // @ts-expect-error -- test-only global, not part of the app
-      window.__unsafeScriptRan = false;
-    });
+  test("an inline script without the nonce does not run, but one with it does", async ({
+    page,
+  }) => {
+    // /csp-check (a tests/e2e fixture only, not a product screen) renders
+    // two genuine server-side inline scripts: one carrying the request's
+    // nonce, one without. Driving this through Playwright's own
+    // evaluate/addScriptTag would prove nothing - those inject through the
+    // DevTools Protocol, which Chromium runs in a context that bypasses
+    // the page's CSP - so this checks real, browser-parsed HTML instead.
+    await page.goto("/csp-check");
 
-    // Playwright's addScriptTag injects a plain <script> element with no
-    // nonce attribute: exactly the "inline script without nonce" case.
-    await page
-      .addScriptTag({ content: "window.__unsafeScriptRan = true;" })
-      .catch(() => undefined); // CSP makes the injected script itself reject; that's the point
-
-    const ran = await page.evaluate(
+    const trustedRan = await page.evaluate(
       // @ts-expect-error -- test-only global, not part of the app
-      () => window.__unsafeScriptRan,
+      () => window.__cspCheckTrustedRan,
     );
-    expect(ran).toBe(false);
+    const untrustedRan = await page.evaluate(
+      // @ts-expect-error -- test-only global, not part of the app
+      () => window.__cspCheckUntrustedRan,
+    );
+
+    expect(trustedRan).toBe(true);
+    expect(untrustedRan).toBeUndefined();
   });
 });
