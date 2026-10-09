@@ -1,0 +1,13 @@
+[project]
+name = "creatoriqx-worker"
+version = "0.1.0"
+description = "CreatorIQX worker: runs the Celery app owned by creatoriqx-api (ADR 0003)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "creatoriqx-api",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13"]
+build-backend = "uv_build"
