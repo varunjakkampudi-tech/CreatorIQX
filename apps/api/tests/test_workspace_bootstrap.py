@@ -62,7 +62,7 @@ def test_generated_ids_never_equal_the_sentinel() -> None:
     ("email", "expected"),
     [
         ("ada@example.com", "ada's workspace"),
-        ("  Ada.Lovelace@example.com ", "  Ada.Lovelace's workspace"),
+        ("  Ada.Lovelace@example.com ", "Ada.Lovelace's workspace"),
         ("@example.com", "Personal workspace"),
         ("   @example.com", "Personal workspace"),
     ],

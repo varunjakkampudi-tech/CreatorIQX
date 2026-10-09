@@ -76,6 +76,24 @@ jobs:
           section "erd drift"         uv run python scripts/generate_erd.py --check
           section "pytest"            uv run python scripts/dev.py test
 
+          # Mermaid rendering, the same check the docs workflow runs.
+          echo '{"args":["--no-sandbox"]}' > "$RUNNER_TEMP/puppeteer.json"
+          python3 scripts/check_docs.py --extract-mermaid "$RUNNER_TEMP/mermaid" > /dev/null 2>&1
+          mermaid_out=""
+          for f in "$RUNNER_TEMP"/mermaid/*.mmd; do
+            [ -e "$f" ] || continue
+            if ! one=$(npx --yes @mermaid-js/mermaid-cli@11 \
+                  -p "$RUNNER_TEMP/puppeteer.json" -i "$f" -o "${f%.mmd}.svg" 2>&1); then
+              mermaid_out="${mermaid_out}"$'\n'"[FAILED] $(basename "$f")"$'\n'"${one}"
+            fi
+          done
+          if [ -n "$mermaid_out" ]; then
+            printf '### mermaid: FAIL\n\n```\n%s\n```\n\n' \
+              "$(printf '%s' "$mermaid_out" | tail -c 6000)" >> "$report"
+          else
+            printf '### mermaid: PASS\n\n' >> "$report"
+          fi
+
           # Focused diagnosis of the bootstrap integration test, with SQL echo.
           out=$(SQL_ECHO=1 uv run pytest \
             tests/integration/test_workspace_bootstrap_db.py -x -vv --tb=long 2>&1)
