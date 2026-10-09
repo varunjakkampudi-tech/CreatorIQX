@@ -1,3 +1,14 @@
 packages:
   - "apps/web"
   - "packages/*"
+
+# pnpm 11+ refuses to run a dependency's install/postinstall script unless
+# it's explicitly allowed here (ERR_PNPM_IGNORED_BUILDS otherwise), so CI
+# fails loudly instead of silently running an unreviewed script. Both of
+# these are well-known native build steps pulled in transitively by Next.js
+# tooling (added when P0-082 added next-intl and @playwright/test):
+# @parcel/watcher compiles its native file-watcher binary, @swc/core
+# compiles the Rust-based compiler Next.js's own build already depends on.
+allowBuilds:
+  "@parcel/watcher": true
+  "@swc/core": true
