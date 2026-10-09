@@ -4,6 +4,16 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ## [Unreleased]
 
+Nothing yet. Phase 1A starts with the Option-B deferred tickets (P0-055,
+P0-061, P0-062, P0-070), once the owner unblocks P0-052 and/or P0-090.
+
+## [0.1.0] - 2026-10-09
+
+Phase 0 (Foundation) gate PASSED (P0-110; see `docs/PROGRESS.md`'s Phase 0
+scorecard). Everything below is Foundation: tooling, auth, tenancy, CI,
+Docker images, security scans and docs. No product features (section 4 of
+the spec) exist yet - those start in Phase 1A.
+
 ### Fixed
 
 - `Settings.oidc_client_id`/`oidc_client_secret` now actually read
