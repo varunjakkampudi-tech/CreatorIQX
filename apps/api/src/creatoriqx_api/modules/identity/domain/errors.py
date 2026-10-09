@@ -1,4 +1,4 @@
-"""Identity module domain errors (spec §12)."""
+"""Identity module domain errors (spec A12)."""
 
 from __future__ import annotations
 
@@ -22,8 +22,32 @@ class EmailNotAllowedError(DomainError):
 
 
 class OIDCStateMismatchError(DomainError):
-    """The state parameter from the callback does not match the session."""
+    """The state parameter from the callback does not match the login flow."""
 
     status = 400
     title = "Invalid login state"
     code = "oidc-state-mismatch"
+
+
+class SessionRequiredError(DomainError):
+    """The request carries no valid session cookie."""
+
+    status = 401
+    title = "Sign in required"
+    code = "session-required"
+
+
+class SessionExpiredError(DomainError):
+    """The session timed out (idle or absolute). Sign in again."""
+
+    status = 401
+    title = "Session expired"
+    code = "session-expired"
+
+
+class CSRFTokenError(DomainError):
+    """An unsafe request did not carry the session's CSRF token."""
+
+    status = 403
+    title = "Invalid CSRF token"
+    code = "csrf-token-invalid"

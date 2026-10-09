@@ -6,18 +6,24 @@ Run locally with:
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
+from datetime import timedelta
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import make_asgi_app
-from starlette.middleware.sessions import SessionMiddleware
+from redis.asyncio import Redis
 
 from creatoriqx_api import __version__
 from creatoriqx_api.modules.identity.api.auth import router as auth_router
+from creatoriqx_api.modules.identity.api.sessions import router as sessions_router
 from creatoriqx_api.modules.identity.application.auth_service import AuthService
+from creatoriqx_api.modules.identity.application.session_service import SessionService
+from creatoriqx_api.modules.identity.domain.session import SessionPolicy
 from creatoriqx_api.modules.identity.infrastructure.google_oidc import GoogleOIDCProvider
+from creatoriqx_api.modules.identity.infrastructure.key_value_store import RedisKeyValueStore
 from creatoriqx_api.platform.errors import install_error_handlers
 from creatoriqx_api.platform.health import HealthCheck, PostgresCheck, RedisCheck, run_checks
 from creatoriqx_api.platform.logging import configure_logging
@@ -27,6 +33,13 @@ from creatoriqx_api.settings import Settings, get_settings
 
 API_V1_PREFIX = "/api/v1"
 _NO_STORE = {"Cache-Control": "no-store"}
+_CORS_HEADERS = [
+    "authorization",
+    "content-type",
+    "x-request-id",
+    "idempotency-key",
+    "x-csrf-token",
+]
 
 
 def default_checks(settings: Settings) -> list[HealthCheck]:
@@ -45,6 +58,14 @@ def create_app(
     settings = settings or get_settings()
     configure_logging(settings)
     readiness_checks = list(checks) if checks is not None else default_checks(settings)
+    redis = Redis.from_url(settings.redis_url.get_secret_value())
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            await redis.aclose()
 
     app = FastAPI(
         title=f"{settings.product_name} API",
@@ -52,6 +73,7 @@ def create_app(
         openapi_url=f"{API_V1_PREFIX}/openapi.json",
         docs_url=f"{API_V1_PREFIX}/docs" if settings.app_env != "production" else None,
         redoc_url=None,
+        lifespan=lifespan,
     )
     # Middleware is applied outermost-last. Request order: CORS, security
     # headers, body-size guard, correlation; responses unwind in reverse.
@@ -63,12 +85,12 @@ def create_app(
         allow_origins=[settings.app_base_url],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["authorization", "content-type", "x-request-id", "idempotency-key"],
+        allow_headers=_CORS_HEADERS,
     )
-    app.add_middleware(SessionMiddleware, secret_key=settings.session_secret.get_secret_value())
     install_error_handlers(app)
 
-    # Wire the auth service (OIDC login, ADR 0004).
+    _wire_sessions(app, settings, redis)
+
     if settings.oidc_client_id:
         provider = GoogleOIDCProvider(
             client_id=settings.oidc_client_id,
@@ -94,9 +116,23 @@ def create_app(
             headers=_NO_STORE,
         )
 
+    app.include_router(sessions_router, prefix=API_V1_PREFIX)
+
     # Feature modules attach their routers here as they are built.
     app.include_router(APIRouter(prefix=API_V1_PREFIX))
 
     # Prometheus metrics. Restricted to the internal network in production (Phase 1E).
     app.mount("/metrics", make_asgi_app())
     return app
+
+
+def _wire_sessions(app: FastAPI, settings: Settings, redis: Redis) -> None:
+    """Server-side sessions and login flows live in Redis (ADR 0010)."""
+    store = RedisKeyValueStore(redis)
+    policy = SessionPolicy(
+        idle_timeout=timedelta(minutes=settings.session_idle_timeout_minutes),
+        absolute_timeout=timedelta(hours=settings.session_absolute_timeout_hours),
+    )
+    app.state.settings = settings
+    app.state.key_value_store = store
+    app.state.session_service = SessionService(store, policy)

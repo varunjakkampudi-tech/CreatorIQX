@@ -13,3 +13,4 @@ Every significant decision gets an ADR (spec §0.4). Copy [`0000-template.md`](0
 | [0007](0007-youtube-capability-model-manual-upload.md) | Gate every YouTube write behind a verified capability; default to manual Private upload | Accepted | 2026-10-08 |
 | [0008](0008-shared-transcripts-module.md) | Serve all transcript sources through one shared transcripts module | Accepted | 2026-10-08 |
 | [0009](0009-quota-ledger-redis-postgres.md) | Track YouTube quota live in Redis and durably in Postgres | Accepted | 2026-10-08 |
+| [0010](0010-server-side-sessions-and-csrf.md) | Use server-side sessions in Redis with CSRF tokens and two timeouts | Accepted | 2026-10-09 |

@@ -66,11 +66,25 @@ Ratings: High, Medium, Low (likelihood and impact combined). Every High threat n
 | T-E2 | Elevation of privilege | App database role runs DDL or bypasses RLS | High | Separate owner and runtime roles; runtime role owns no tables | P0-020 (role test) |
 | T-E3 | Elevation of privilege | First-login bootstrap path used to create data in another workspace | Medium | Workspace id generated in the app, set as RLS context before insert; no privileged bypass path | P0-053 |
 
+## Session controls (P0-051, ADR 0010)
+
+| Control | Setting | Why |
+|---|---|---|
+| Session id | 256-bit random, held only in Redis | Cannot be guessed or derived from user data |
+| Idle timeout | 60 minutes by default (`SESSION_IDLE_TIMEOUT_MINUTES`) | Limits an unattended browser |
+| Absolute timeout | 12 hours by default (`SESSION_ABSOLUTE_TIMEOUT_HOURS`) | Bounds a stolen session even when it stays active |
+| Rotation | New id on every login; the previous id is deleted | Stops session fixation (T-S3) |
+| Cookie | `__Host-` prefix, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, always | Scripts cannot read it; cross-site requests do not carry it; sibling hosts and paths cannot shadow it |
+| CSRF | Synchroniser token on every unsafe method, compared in constant time | Blocks cross-site state changes (T-T1) |
+| Login flow | `state`, `nonce` and PKCE verifier in Redis, 10 minutes, consumed atomically | A replayed or cross-browser callback fails (T-S1) |
+| Logout | Server-side delete and cookie cleared; CSRF required | The id stops working at once, not at expiry |
+| Logging | Session ids, CSRF tokens and cookies never logged; login logs the subject only | Keeps credentials out of logs (T-I2) |
+
 ## Accepted risks (v0)
 
 | Risk | Why accepted for now | Revisit |
 |---|---|---|
-| Local development over `http://localhost` | Browsers treat localhost as a secure context (verify per browser, OQ-10); fallback to local TLS exists | P0-051 |
+| Local development over `http://localhost` | Session cookies are `Secure` and browsers treat localhost as a secure context. Per-browser behaviour (Chrome, Edge, Firefox, Safari) is confirmed in the real login check (P0-052, OQ-10) | P0-052 |
 | OAuth app in Google "Testing" status | Single user; token expiry handled by reconnect flow | Phase 1A, Phase 5 (verification) |
 | Rate limiting deferred to 1A | Nothing is exposed beyond the developer's machine in Phase 0 | Start of 1A |
 | Local Redis has no password; local Postgres uses trust auth inside the container | Both bind to 127.0.0.1 only (ports 55432, 56379); the container's socket trust is never reachable from outside. Production (1E) requires Redis auth and password or certificate auth for Postgres | Phase 1E |

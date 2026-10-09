@@ -25,7 +25,6 @@ def _settings(**overrides: str) -> Settings:
     return Settings(
         database_app_url=SecretStr(str(values["DATABASE_APP_URL"])),
         redis_url=SecretStr(str(values["REDIS_URL"])),
-        session_secret=SecretStr(str(values["SESSION_SECRET"])),
     )
 
 

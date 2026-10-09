@@ -1,4 +1,4 @@
-"""Application settings, read from environment variables only (spec §14).
+"""Application settings, read from environment variables only (spec A14).
 
 Secrets are ``SecretStr`` so they never appear in logs, reprs or error output.
 Local development loads ``.env`` through the process runner (for example
@@ -32,10 +32,10 @@ class Settings(BaseSettings):
     app_env: AppEnv = "local"
     log_level: LogLevel = "INFO"
     database_app_url: SecretStr = Field(description="Runtime role DSN (ADR 0002)")
-    redis_url: SecretStr = Field(description="Redis DSN")
+    redis_url: SecretStr = Field(description="Redis DSN (sessions, login flows, quota)")
     app_base_url: str = Field(
         default="http://localhost:3000",
-        description="Browser origin; the only allowed CORS origin",
+        description="Browser origin; the only allowed CORS origin and the post-login redirect",
     )
     max_request_body_bytes: int = Field(
         default=1_000_000, gt=0, description="Reject larger request bodies with 413"
@@ -55,7 +55,17 @@ class Settings(BaseSettings):
             "Empty means no restriction (not recommended for production)"
         ),
     )
-    session_secret: SecretStr = Field(description="Secret key for session signing")
+    oidc_flow_ttl_seconds: int = Field(
+        default=600, ge=60, le=900, description="How long a started login may take to finish"
+    )
+
+    # Server-side sessions (ADR 0010).
+    session_idle_timeout_minutes: int = Field(
+        default=60, ge=5, le=1440, description="Sign out after this long without activity"
+    )
+    session_absolute_timeout_hours: int = Field(
+        default=12, ge=1, le=168, description="Sign out this long after login, regardless"
+    )
 
     @property
     def allowed_emails_set(self) -> frozenset[str]:

@@ -30,7 +30,6 @@ def make_settings(**overrides: object) -> Settings:
     values: dict[str, object] = {
         "database_app_url": SecretStr("postgresql+asyncpg://u:p@localhost:1/db"),
         "redis_url": SecretStr("redis://localhost:1/0"),
-        "session_secret": SecretStr("test-session-secret-at-least-32-chars"),
         "readiness_timeout_seconds": 0.2,
     }
     values.update(overrides)

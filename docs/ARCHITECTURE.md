@@ -112,3 +112,49 @@ Bounded contexts (spec §3), added only when a ticket needs them: `identity`, `w
 ## Phase status
 
 Phase 0 builds: web app shell, API skeleton, `identity` and `workspaces` modules, `audit`, a minimal `jobs` port with one Celery job, PostgreSQL and Redis, CI. Everything else on this page arrives in later phases.
+
+## Sign-in and session flows (P0-051)
+
+How a creator signs in, and how each later request is checked. The rules are in [ADR 0010](adr/0010-server-side-sessions-and-csrf.md); the login provider is in [ADR 0004](adr/0004-oidc-login-separate-from-youtube-oauth.md).
+
+### Sign-in sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Creator (browser)
+    participant API as CreatorIQX API
+    participant R as Redis
+    participant G as Google OIDC
+
+    U->>API: GET /api/v1/auth/login
+    API->>R: Store login flow (state, nonce, PKCE verifier), 10 min
+    API-->>U: 302 to Google, sets flow cookie (HttpOnly, SameSite=Lax)
+    U->>G: Authorize with openid email profile
+    G-->>U: 302 to /api/v1/auth/callback with code and state
+    U->>API: GET /api/v1/auth/callback (flow cookie)
+    API->>R: Take login flow (single use, atomic)
+    API->>G: Exchange code with PKCE verifier
+    G-->>API: ID token
+    API->>API: Check issuer, audience, expiry, nonce, signature, email_verified, allow-list
+    API->>R: Delete previous session, if any
+    API->>R: Store new session, absolute TTL 12 h
+    API-->>U: 303 to the app, sets session cookie, clears flow cookie
+```
+
+### Checking each request
+
+```mermaid
+flowchart TD
+    req["Request with session cookie"] --> exists{"Session in Redis?"}
+    exists -- no --> r401["401 session-required"]
+    exists -- yes --> live{"Inside idle and absolute limits?"}
+    live -- no --> drop["Delete session"]
+    drop --> r401e["401 session-expired"]
+    live -- yes --> touch["Record activity, restart idle timer"]
+    touch --> unsafe{"Unsafe method?"}
+    unsafe -- no --> handle["Handle request"]
+    unsafe -- yes --> csrf{"X-CSRF-Token matches?"}
+    csrf -- no --> r403["403 csrf-token-invalid"]
+    csrf -- yes --> handle
+```

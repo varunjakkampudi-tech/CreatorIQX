@@ -17,7 +17,6 @@ DSN = "postgresql+asyncpg://creatoriqx_app:s3cret-pw@localhost:55432/creatoriqx"
 def env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
     monkeypatch.setenv("DATABASE_APP_URL", DSN)
     monkeypatch.setenv("REDIS_URL", "redis://localhost:56379/0")
-    monkeypatch.setenv("SESSION_SECRET", "test-session-secret-at-least-32-chars")
     return monkeypatch
 
 
@@ -38,7 +37,24 @@ def test_secrets_never_appear_in_repr_or_str() -> None:
 def test_missing_required_values_fail_fast(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("DATABASE_APP_URL", raising=False)
     monkeypatch.delenv("REDIS_URL", raising=False)
-    monkeypatch.delenv("SESSION_SECRET", raising=False)
+    with pytest.raises(ValidationError):
+        Settings()  # type: ignore[call-arg]
+
+
+@pytest.mark.usefixtures("env")
+def test_session_timeouts_have_safe_defaults() -> None:
+    settings = Settings()  # type: ignore[call-arg]
+    assert settings.session_idle_timeout_minutes == 60
+    assert settings.session_absolute_timeout_hours == 12
+
+
+@pytest.mark.usefixtures("env")
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [("SESSION_IDLE_TIMEOUT_MINUTES", "0"), ("SESSION_ABSOLUTE_TIMEOUT_HOURS", "9999")],
+)
+def test_session_timeouts_are_bounded(env: pytest.MonkeyPatch, name: str, value: str) -> None:
+    env.setenv(name, value)
     with pytest.raises(ValidationError):
         Settings()  # type: ignore[call-arg]
 

@@ -15,6 +15,7 @@ import base64
 import hashlib
 import urllib.parse
 from dataclasses import dataclass
+from datetime import timedelta
 
 import httpx2
 import pytest
@@ -23,6 +24,7 @@ from pydantic import SecretStr
 
 from creatoriqx_api.main import create_app
 from creatoriqx_api.modules.identity.application.auth_service import AuthService, LoginFlowState
+from creatoriqx_api.modules.identity.application.session_service import SessionService
 from creatoriqx_api.modules.identity.domain.auth import (
     OIDCProviderError,
     OIDCTokenValidationError,
@@ -33,8 +35,14 @@ from creatoriqx_api.modules.identity.domain.errors import (
     EmailNotAllowedError,
     OIDCStateMismatchError,
 )
+from creatoriqx_api.modules.identity.domain.session import SessionPolicy
+from creatoriqx_api.modules.identity.infrastructure.key_value_store import InMemoryKeyValueStore
 from creatoriqx_api.platform.health import HealthCheck
 from creatoriqx_api.settings import Settings
+
+_TEST_POLICY = SessionPolicy(
+    idle_timeout=timedelta(minutes=30), absolute_timeout=timedelta(hours=12)
+)
 
 # ---------------------------------------------------------------------------
 # Fake OIDC provider for unit tests
@@ -301,7 +309,6 @@ def _make_settings(**overrides: object) -> Settings:
     values: dict[str, object] = {
         "database_app_url": SecretStr("postgresql+asyncpg://u:p@localhost:1/db"),
         "redis_url": SecretStr("redis://localhost:1/0"),
-        "session_secret": SecretStr("test-session-secret-at-least-32-chars-long"),
         "oidc_client_id": "test-client-id",
         "oidc_client_secret": SecretStr("test-client-secret"),
         "readiness_timeout_seconds": 0.2,
@@ -319,6 +326,10 @@ def _make_client(
     settings = _make_settings(auth_allowed_emails=emails_csv)
     checks: list[HealthCheck] = []
     app = create_app(settings, checks=checks)
+    # In-memory sessions and login flows: no Redis needed for route tests.
+    store = InMemoryKeyValueStore()
+    app.state.key_value_store = store
+    app.state.session_service = SessionService(store, _TEST_POLICY)
     # Override the auth service with our fake provider.
     app.state.auth_service = AuthService(
         provider=provider,
@@ -326,7 +337,8 @@ def _make_client(
         if emails_csv
         else frozenset(),
     )
-    return TestClient(app)
+    # Secure cookies only travel over HTTPS, so the test client uses an HTTPS origin.
+    return TestClient(app, base_url="https://testserver")
 
 
 class TestLoginRoute:
@@ -342,8 +354,8 @@ class TestLoginRoute:
         client = _make_client(provider)
         response = client.get("/api/v1/auth/login", follow_redirects=False)
         assert response.status_code == 302
-        # Session cookie should be set.
-        assert "session" in response.cookies
+        # The login flow is bound to the browser by a single-use cookie.
+        assert "creatoriqx_oidc_flow" in response.cookies
 
 
 class TestCallbackRoute:
@@ -377,17 +389,23 @@ class TestCallbackRoute:
             params["state"] = callback_state or session_state
         if error:
             params["error"] = error
-        return client.get("/api/v1/auth/callback", params=params)
+        return client.get("/api/v1/auth/callback", params=params, follow_redirects=False)
 
-    def test_valid_callback_returns_authenticated_user(self) -> None:
+    def test_valid_callback_redirects_to_app_with_session_cookie(self) -> None:
         provider = FakeOIDCProvider(user=VALID_USER)
         response = self._do_login_and_callback(provider)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "authenticated"
-        assert data["user"]["email"] == "creator@example.com"
-        assert data["user"]["subject"] == "google-uid-123"
-        assert data["user"]["name"] == "Test Creator"
+        assert response.status_code == 303
+        assert response.headers["location"] == "http://localhost:3000/"
+        # Session cookie: __Host- prefix, Secure, HttpOnly, SameSite=Lax, Path=/.
+        set_cookie = response.headers["set-cookie"]
+        assert "__Host-creatoriqx_session=" in set_cookie
+        assert "Secure" in set_cookie
+        assert "HttpOnly" in set_cookie
+        assert "SameSite=lax" in set_cookie
+        assert "Path=/" in set_cookie
+        # The single-use flow cookie is cleared in the same response.
+        assert "creatoriqx_oidc_flow=" in set_cookie
+        assert "Max-Age=0" in set_cookie
 
     def test_mismatched_state_returns_400(self) -> None:
         provider = FakeOIDCProvider(user=VALID_USER)
