@@ -11,7 +11,10 @@ from __future__ import annotations
 import uuid
 
 from creatoriqx_api.modules.telemetry.application.usage_event_recorder import UsageEventRecorder
-from creatoriqx_api.modules.telemetry.domain.usage_event import UsageEventRecord, sanitize_properties
+from creatoriqx_api.modules.telemetry.domain.usage_event import (
+    UsageEventRecord,
+    sanitize_properties,
+)
 
 
 class TestSanitizeProperties:
