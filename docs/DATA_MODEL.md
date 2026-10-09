@@ -85,11 +85,11 @@ read it only through that module's public interface or domain events.
 |---|---|---|
 | `audit_log` | audit | yes |
 | `idempotency_keys` | jobs | yes |
-| `memberships` | identity | yes |
+| `memberships` | workspaces | yes |
 | `outbox_events` | jobs | no |
 | `usage_events` | telemetry | yes |
 | `users` | identity | no |
-| `workspaces` | identity | no |
+| `workspaces` | workspaces | no |
 
 ## Global (non-tenant) tables
 

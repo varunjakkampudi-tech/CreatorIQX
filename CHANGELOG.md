@@ -6,6 +6,12 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ### Added
 
+- `workspaces` bounded context as the reference hexagonal module: first login creates the
+  user, a personal workspace and an owner membership in one transaction under forced
+  row-level security, with an advisory lock per Google subject and no privileged bypass
+  path. Writes `user.created`, `workspace.created` and `auth.login_succeeded` audit rows
+  and one `workspace.created` outbox event. Repeat login is idempotent (P0-053, ADR 0011).
+- Sessions carry `user_id` and `workspace_id`, returned by `GET /api/v1/auth/session`.
 - Frozen master specification (Revision 2.5.1, product named CreatorIQX) as `CLAUDE.md`.
 - Phase 0 plan, backlog, progress log, agent kickoff prompt.
 - README, CONTRIBUTING and this changelog.

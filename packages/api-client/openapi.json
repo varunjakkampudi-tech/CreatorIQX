@@ -20,9 +20,21 @@
           "subject": {
             "title": "Subject",
             "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
           }
         },
         "required": [
+          "user_id",
+          "workspace_id",
           "subject",
           "email",
           "csrf_token",

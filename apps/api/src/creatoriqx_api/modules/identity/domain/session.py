@@ -13,6 +13,7 @@ Two clocks govern a session:
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
@@ -37,7 +38,9 @@ class SessionPolicy:
 class Session:
     """An authenticated browser session bound to one user.
 
-    ``subject`` is the Google OIDC subject (stable per user). ``csrf_token``
+    ``subject`` is the Google OIDC subject (stable per user). ``user_id`` and
+    ``workspace_id`` are the tenant context bound at login (ADR 0011): every
+    later request sets them as the row-level security context. ``csrf_token``
     is the synchroniser token that unsafe requests must echo back.
     All datetimes are timezone-aware UTC.
     """
@@ -45,6 +48,8 @@ class Session:
     id: str
     subject: str
     email: str
+    user_id: uuid.UUID
+    workspace_id: uuid.UUID
     csrf_token: str
     created_at: datetime
     last_seen_at: datetime
@@ -64,6 +69,8 @@ class Session:
             "id": self.id,
             "subject": self.subject,
             "email": self.email,
+            "user_id": str(self.user_id),
+            "workspace_id": str(self.workspace_id),
             "csrf_token": self.csrf_token,
             "created_at": self.created_at.isoformat(),
             "last_seen_at": self.last_seen_at.isoformat(),
@@ -77,6 +84,8 @@ class Session:
             id=str(record["id"]),
             subject=str(record["subject"]),
             email=str(record["email"]),
+            user_id=uuid.UUID(str(record["user_id"])),
+            workspace_id=uuid.UUID(str(record["workspace_id"])),
             csrf_token=str(record["csrf_token"]),
             created_at=datetime.fromisoformat(str(record["created_at"])),
             last_seen_at=datetime.fromisoformat(str(record["last_seen_at"])),

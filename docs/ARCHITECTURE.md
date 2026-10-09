@@ -111,7 +111,7 @@ Bounded contexts (spec §3), added only when a ticket needs them: `identity`, `w
 
 ## Phase status
 
-Phase 0 builds: web app shell, API skeleton, `identity` and `workspaces` modules, `audit`, a minimal `jobs` port with one Celery job, PostgreSQL and Redis, CI. Everything else on this page arrives in later phases.
+Phase 0 builds: web app shell, API skeleton, `identity` and `workspaces` modules (workspaces is the reference module, P0-053), `audit`, a minimal `jobs` port with one Celery job, PostgreSQL and Redis, CI. Everything else on this page arrives in later phases.
 
 ## Sign-in and session flows (P0-051)
 
@@ -157,4 +157,59 @@ flowchart TD
     unsafe -- yes --> csrf{"X-CSRF-Token matches?"}
     csrf -- no --> r403["403 csrf-token-invalid"]
     csrf -- yes --> handle
+```
+
+## First-login bootstrap (P0-053)
+
+The first successful Google login creates the person, their personal workspace and the owner membership, in one transaction, before the session is issued. The rules are in [ADR 0011](adr/0011-workspace-bootstrap-at-first-login.md). Repeat logins resolve the same ids and create nothing.
+
+### Bootstrap sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Cb as /auth/callback
+    participant BS as WorkspaceBootstrapService
+    participant ST as SqlPersonalWorkspaceStore
+    participant PG as PostgreSQL (runtime role, forced RLS)
+    participant SS as SessionService
+    Cb->>BS: ensure_personal_workspace(subject, email)
+    BS->>BS: normalise email, generate UUIDv7 ids
+    BS->>ST: ensure(BootstrapCommand)
+    ST->>PG: BEGIN, then pg_advisory_xact_lock(subject)
+    ST->>PG: find users by google_sub
+    alt first login
+        ST->>PG: INSERT users (context: no workspace)
+        ST->>PG: INSERT audit_log user.created (context: no workspace)
+    end
+    ST->>PG: find owner membership (context: user)
+    alt no workspace yet
+        ST->>PG: INSERT workspaces and flush first (context: new workspace)
+        ST->>PG: INSERT memberships and outbox_events (context: new workspace)
+        ST->>PG: INSERT audit_log workspace.created (context: new workspace)
+    end
+    ST->>PG: INSERT audit_log auth.login_succeeded (context: workspace)
+    ST->>PG: COMMIT
+    ST-->>BS: BootstrapResult(user_id, workspace_id, flags)
+    BS-->>Cb: result
+    Cb->>SS: rotate(previous, subject, email, user_id, workspace_id)
+    SS-->>Cb: session bound to the tenant
+```
+
+### Tenant context while bootstrapping
+
+```mermaid
+flowchart TD
+    start["Login callback verified by Google"] --> lock["Advisory lock on the Google subject"]
+    lock --> known{"User already exists for this subject?"}
+    known -- no --> email{"Email bound to another subject?"}
+    email -- yes --> conflict["409 identity-conflict, nothing written"]
+    email -- no --> mkuser["Create user, audit user.created under NO_WORKSPACE"]
+    known -- yes --> member
+    mkuser --> member{"Owner membership exists?"}
+    member -- no --> mkws["Insert workspace first, then owner membership and outbox workspace.created, under the NEW workspace id"]
+    member -- yes --> reuse["Reuse its workspace id, create nothing"]
+    mkws --> audit["Audit auth.login_succeeded under the workspace"]
+    reuse --> audit
+    audit --> commit["COMMIT, then issue the session with user_id and workspace_id"]
 ```

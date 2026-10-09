@@ -1,7 +1,8 @@
 """Google OIDC login routes (spec A10, ADR 0004, ADR 0010).
 
   GET  /auth/login      start the flow; store it server-side behind a single-use cookie
-  GET  /auth/callback   finish the flow; rotate to a fresh session; redirect to the app
+  GET  /auth/callback   finish the flow; bootstrap the personal workspace; rotate to a
+                        fresh session bound to it; redirect to the app
 
 The flow record is single-use (``take``): a replayed callback finds nothing and fails.
 """
@@ -11,6 +12,7 @@ from __future__ import annotations
 import secrets
 from typing import Annotated
 
+import structlog
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 
@@ -27,6 +29,9 @@ from creatoriqx_api.modules.identity.application.ports import KeyValueStore
 from creatoriqx_api.modules.identity.domain.errors import (
     AuthenticationError,
     OIDCStateMismatchError,
+)
+from creatoriqx_api.modules.workspaces.application.bootstrap_service import (
+    WorkspaceBootstrapService,
 )
 from creatoriqx_api.platform.logging import get_logger
 
@@ -47,6 +52,14 @@ def get_key_value_store(request: Request) -> KeyValueStore:
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 KeyValueStoreDep = Annotated[KeyValueStore, Depends(get_key_value_store)]
+
+
+def get_bootstrap_service(request: Request) -> WorkspaceBootstrapService:
+    service: WorkspaceBootstrapService = request.app.state.bootstrap_service
+    return service
+
+
+BootstrapServiceDep = Annotated[WorkspaceBootstrapService, Depends(get_bootstrap_service)]
 
 
 def _flow_record(flow: LoginFlowState) -> dict[str, str]:
@@ -92,6 +105,7 @@ async def callback(
     auth_service: AuthServiceDep,
     store: KeyValueStoreDep,
     sessions: SessionServiceDep,
+    bootstrap: BootstrapServiceDep,
     code: Annotated[str | None, Query()] = None,
     state: Annotated[str | None, Query()] = None,
     error: Annotated[str | None, Query()] = None,
@@ -113,10 +127,21 @@ async def callback(
         flow_state=_flow_from_record(record),
     )
 
+    # First login creates the user, personal workspace and owner membership (ADR 0011).
+    # Repeat logins resolve the same ids and create nothing.
+    correlation_id = structlog.contextvars.get_contextvars().get("request_id")
+    bootstrapped = await bootstrap.ensure_personal_workspace(
+        subject=user.subject,
+        email=user.email,
+        correlation_id=str(correlation_id) if correlation_id else None,
+    )
+
     session = await sessions.rotate(
         previous_session_id=request.cookies.get(SESSION_COOKIE),
         subject=user.subject,
         email=user.email,
+        user_id=bootstrapped.user_id,
+        workspace_id=bootstrapped.workspace_id,
     )
 
     settings = request.app.state.settings
