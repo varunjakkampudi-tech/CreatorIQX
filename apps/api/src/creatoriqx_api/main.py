@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import make_asgi_app
 from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from creatoriqx_api import __version__
 from creatoriqx_api.modules.identity.api.auth import router as auth_router
@@ -24,6 +25,11 @@ from creatoriqx_api.modules.identity.application.session_service import SessionS
 from creatoriqx_api.modules.identity.domain.session import SessionPolicy
 from creatoriqx_api.modules.identity.infrastructure.google_oidc import GoogleOIDCProvider
 from creatoriqx_api.modules.identity.infrastructure.key_value_store import RedisKeyValueStore
+from creatoriqx_api.modules.workspaces.application.bootstrap_service import (
+    WorkspaceBootstrapService,
+)
+from creatoriqx_api.modules.workspaces.infrastructure.sql_store import SqlPersonalWorkspaceStore
+from creatoriqx_api.platform.database import create_engine, create_session_factory
 from creatoriqx_api.platform.errors import install_error_handlers
 from creatoriqx_api.platform.health import HealthCheck, PostgresCheck, RedisCheck, run_checks
 from creatoriqx_api.platform.logging import configure_logging
@@ -59,6 +65,7 @@ def create_app(
     configure_logging(settings)
     readiness_checks = list(checks) if checks is not None else default_checks(settings)
     redis = Redis.from_url(settings.redis_url.get_secret_value())
+    engine = create_engine(settings)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -66,6 +73,7 @@ def create_app(
             yield
         finally:
             await redis.aclose()
+            await engine.dispose()
 
     app = FastAPI(
         title=f"{settings.product_name} API",
@@ -90,6 +98,7 @@ def create_app(
     install_error_handlers(app)
 
     _wire_sessions(app, settings, redis)
+    _wire_workspaces(app, engine)
 
     if settings.oidc_client_id:
         provider = GoogleOIDCProvider(
@@ -124,6 +133,12 @@ def create_app(
     # Prometheus metrics. Restricted to the internal network in production (Phase 1E).
     app.mount("/metrics", make_asgi_app())
     return app
+
+
+def _wire_workspaces(app: FastAPI, engine: AsyncEngine) -> None:
+    """The first-login bootstrap writes through the runtime role under forced RLS (ADR 0011)."""
+    store = SqlPersonalWorkspaceStore(create_session_factory(engine))
+    app.state.bootstrap_service = WorkspaceBootstrapService(store)
 
 
 def _wire_sessions(app: FastAPI, settings: Settings, redis: Redis) -> None:

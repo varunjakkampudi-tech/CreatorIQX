@@ -5,6 +5,7 @@ The clock is injected so the timeout rules are tested without sleeping.
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -20,6 +21,8 @@ from creatoriqx_api.modules.identity.infrastructure.key_value_store import InMem
 
 START = datetime(2026, 10, 9, 9, 0, tzinfo=UTC)
 POLICY = SessionPolicy(idle_timeout=timedelta(minutes=30), absolute_timeout=timedelta(hours=12))
+USER_ID = uuid.UUID(int=1)
+WORKSPACE_ID = uuid.UUID(int=2)
 
 
 class FakeClock:
@@ -43,6 +46,15 @@ def service(clock: FakeClock) -> SessionService:
     return SessionService(InMemoryKeyValueStore(clock), POLICY, clock)
 
 
+async def _open(
+    service: SessionService, subject: str = "s", email: str = "e@x.com"
+) -> Session:
+    """Open a session for the fixture tenant (user and personal workspace ids)."""
+    return await service.create(
+        subject=subject, email=email, user_id=USER_ID, workspace_id=WORKSPACE_ID
+    )
+
+
 # --- policy and model ---------------------------------------------------------
 
 
@@ -61,6 +73,8 @@ def test_session_record_round_trips() -> None:
         id="id",
         subject="sub",
         email="a@b.com",
+        user_id=USER_ID,
+        workspace_id=WORKSPACE_ID,
         csrf_token="csrf",
         created_at=START,
         last_seen_at=START,
@@ -73,16 +87,23 @@ def test_session_record_round_trips() -> None:
 
 
 async def test_created_session_authenticates_to_the_same_user(service: SessionService) -> None:
-    created = await service.create("google-sub-1", "creator@example.com")
+    created = await _open(service, "google-sub-1", "creator@example.com")
     found = await service.authenticate(created.id)
     assert found.subject == "google-sub-1"
     assert found.email == "creator@example.com"
     assert found.csrf_token == created.csrf_token
 
 
+async def test_session_keeps_the_tenant_context_bound_at_login(service: SessionService) -> None:
+    created = await _open(service)
+    found = await service.authenticate(created.id)
+    assert found.user_id == USER_ID
+    assert found.workspace_id == WORKSPACE_ID
+
+
 async def test_session_ids_are_unguessable(service: SessionService) -> None:
-    first = await service.create("s", "e@x.com")
-    second = await service.create("s", "e@x.com")
+    first = await _open(service)
+    second = await _open(service)
     assert first.id != second.id
     assert len(first.id) >= 43  # 32 random bytes, URL-safe base64
     assert len(first.csrf_token) >= 43
@@ -94,7 +115,7 @@ async def test_unknown_session_is_required(service: SessionService) -> None:
 
 
 async def test_end_invalidates_the_session(service: SessionService) -> None:
-    created = await service.create("s", "e@x.com")
+    created = await _open(service)
     await service.end(created.id)
     with pytest.raises(SessionRequiredError):
         await service.authenticate(created.id)
@@ -106,14 +127,14 @@ async def test_end_invalidates_the_session(service: SessionService) -> None:
 async def test_idle_timeout_ends_an_inactive_session(
     service: SessionService, clock: FakeClock
 ) -> None:
-    created = await service.create("s", "e@x.com")
+    created = await _open(service)
     clock.advance(timedelta(minutes=31))
     with pytest.raises(SessionExpiredError):
         await service.authenticate(created.id)
 
 
 async def test_activity_restarts_the_idle_timer(service: SessionService, clock: FakeClock) -> None:
-    created = await service.create("s", "e@x.com")
+    created = await _open(service)
     for _ in range(5):
         clock.advance(timedelta(minutes=25))
         await service.authenticate(created.id)  # 125 minutes in total, all within idle limits
@@ -122,7 +143,7 @@ async def test_activity_restarts_the_idle_timer(service: SessionService, clock: 
 async def test_activity_never_extends_the_absolute_lifetime(
     service: SessionService, clock: FakeClock
 ) -> None:
-    created = await service.create("s", "e@x.com")
+    created = await _open(service)
     for _ in range(35):  # 35 x 20 minutes = 11h40m, always active
         clock.advance(timedelta(minutes=20))
         await service.authenticate(created.id)
@@ -134,7 +155,7 @@ async def test_activity_never_extends_the_absolute_lifetime(
 
 
 async def test_expired_session_is_removed(service: SessionService, clock: FakeClock) -> None:
-    created = await service.create("s", "e@x.com")
+    created = await _open(service)
     clock.advance(timedelta(hours=13))
     with pytest.raises(SessionRequiredError):
         await service.authenticate(created.id)
@@ -146,8 +167,14 @@ async def test_expired_session_is_removed(service: SessionService, clock: FakeCl
 
 
 async def test_rotation_replaces_the_previous_session(service: SessionService) -> None:
-    previous = await service.create("s", "e@x.com")
-    fresh = await service.rotate(previous.id, "s", "e@x.com")
+    previous = await _open(service)
+    fresh = await service.rotate(
+        previous_session_id=previous.id,
+        subject="s",
+        email="e@x.com",
+        user_id=USER_ID,
+        workspace_id=WORKSPACE_ID,
+    )
     assert fresh.id != previous.id
     with pytest.raises(SessionRequiredError):
         await service.authenticate(previous.id)
@@ -157,7 +184,13 @@ async def test_rotation_replaces_the_previous_session(service: SessionService) -
 async def test_rotation_without_previous_session_still_creates_one(
     service: SessionService,
 ) -> None:
-    fresh = await service.rotate(None, "s", "e@x.com")
+    fresh = await service.rotate(
+        previous_session_id=None,
+        subject="s",
+        email="e@x.com",
+        user_id=USER_ID,
+        workspace_id=WORKSPACE_ID,
+    )
     assert (await service.authenticate(fresh.id)).email == "e@x.com"
 
 
@@ -165,7 +198,7 @@ async def test_rotation_without_previous_session_still_creates_one(
 
 
 async def test_matching_csrf_token_passes(service: SessionService) -> None:
-    session = await service.create("s", "e@x.com")
+    session = await _open(service)
     service.verify_csrf(session, session.csrf_token)
 
 
@@ -173,6 +206,6 @@ async def test_matching_csrf_token_passes(service: SessionService) -> None:
 async def test_missing_or_wrong_csrf_token_is_rejected(
     service: SessionService, presented: str | None
 ) -> None:
-    session = await service.create("s", "e@x.com")
+    session = await _open(service)
     with pytest.raises(CSRFTokenError):
         service.verify_csrf(session, presented)

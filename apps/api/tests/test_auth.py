@@ -37,6 +37,12 @@ from creatoriqx_api.modules.identity.domain.errors import (
 )
 from creatoriqx_api.modules.identity.domain.session import SessionPolicy
 from creatoriqx_api.modules.identity.infrastructure.key_value_store import InMemoryKeyValueStore
+from creatoriqx_api.modules.workspaces.application.bootstrap_service import (
+    WorkspaceBootstrapService,
+)
+from creatoriqx_api.modules.workspaces.infrastructure.memory_store import (
+    InMemoryPersonalWorkspaceStore,
+)
 from creatoriqx_api.platform.health import HealthCheck
 from creatoriqx_api.settings import Settings
 
@@ -330,6 +336,8 @@ def _make_client(
     store = InMemoryKeyValueStore()
     app.state.key_value_store = store
     app.state.session_service = SessionService(store, _TEST_POLICY)
+    # Bootstrap in memory: the route tests need no Postgres (P0-053).
+    app.state.bootstrap_service = WorkspaceBootstrapService(InMemoryPersonalWorkspaceStore())
     # Override the auth service with our fake provider.
     app.state.auth_service = AuthService(
         provider=provider,

@@ -64,7 +64,7 @@ Ratings: High, Medium, Low (likelihood and impact combined). Every High threat n
 | T-D3 | Denial of service | Job retries storm the queue | Low | Bounded retries with exponential backoff and jitter | P0-060 |
 | T-E1 | Elevation of privilege | Viewer or editor performs owner-only actions | High | Role checks in the application layer, RLS as backstop | P0-054 (RBAC dependency and harness) |
 | T-E2 | Elevation of privilege | App database role runs DDL or bypasses RLS | High | Separate owner and runtime roles; runtime role owns no tables | P0-020 (role test) |
-| T-E3 | Elevation of privilege | First-login bootstrap path used to create data in another workspace | Medium | Workspace id generated in the app, set as RLS context before insert; no privileged bypass path | P0-053 |
+| T-E3 | Elevation of privilege | First-login bootstrap path used to create data in another workspace | Medium | Ids generated in the app; each row written under its own RLS context; `workspaces` under forced RLS (migration 0005); advisory lock per Google subject so concurrent first logins cannot duplicate a workspace; no BYPASSRLS path; email bound to another subject is refused, never merged (ADR 0011) | P0-053 (integration tests: first-login rows, concurrent logins, cross-member isolation, email conflict; pending a recorded run) |
 
 ## Session controls (P0-051, ADR 0010)
 

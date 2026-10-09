@@ -10,5 +10,6 @@ from creatoriqx_api.modules.audit.infrastructure import tables as _audit
 from creatoriqx_api.modules.identity.infrastructure import tables as _identity
 from creatoriqx_api.modules.jobs.infrastructure import tables as _jobs
 from creatoriqx_api.modules.telemetry.infrastructure import tables as _telemetry
+from creatoriqx_api.modules.workspaces.infrastructure import tables as _workspaces
 
-__all__ = ["_audit", "_identity", "_jobs", "_telemetry"]
+__all__ = ["_audit", "_identity", "_jobs", "_telemetry", "_workspaces"]

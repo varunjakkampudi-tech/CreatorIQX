@@ -12,6 +12,7 @@ Rules enforced here, not in the routes:
 from __future__ import annotations
 
 import secrets
+import uuid
 from datetime import datetime
 
 from creatoriqx_api.modules.identity.application.ports import Clock, KeyValueStore, utc_now
@@ -47,13 +48,22 @@ class SessionService:
     def policy(self) -> SessionPolicy:
         return self._policy
 
-    async def create(self, subject: str, email: str) -> Session:
-        """Open a new session for an authenticated user."""
+    async def create(
+        self,
+        *,
+        subject: str,
+        email: str,
+        user_id: uuid.UUID,
+        workspace_id: uuid.UUID,
+    ) -> Session:
+        """Open a new session for an authenticated user bound to their workspace."""
         now = self._clock()
         session = Session(
             id=secrets.token_urlsafe(_TOKEN_BYTES),
             subject=subject,
             email=email,
+            user_id=user_id,
+            workspace_id=workspace_id,
             csrf_token=secrets.token_urlsafe(_TOKEN_BYTES),
             created_at=now,
             last_seen_at=now,
@@ -80,11 +90,21 @@ class SessionService:
         await self._save(touched, now)
         return touched
 
-    async def rotate(self, previous_session_id: str | None, subject: str, email: str) -> Session:
+    async def rotate(
+        self,
+        *,
+        previous_session_id: str | None,
+        subject: str,
+        email: str,
+        user_id: uuid.UUID,
+        workspace_id: uuid.UUID,
+    ) -> Session:
         """Replace any previous session with a fresh one (run at every login)."""
         if previous_session_id:
             await self._store.delete(_key(previous_session_id))
-        return await self.create(subject, email)
+        return await self.create(
+            subject=subject, email=email, user_id=user_id, workspace_id=workspace_id
+        )
 
     async def end(self, session_id: str) -> None:
         """Sign out: the session stops working immediately."""

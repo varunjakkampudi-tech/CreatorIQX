@@ -6,6 +6,7 @@ an in-memory store and a controllable clock.
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -21,6 +22,8 @@ from creatoriqx_api.settings import Settings
 START = datetime(2026, 10, 9, 9, 0, tzinfo=UTC)
 POLICY = SessionPolicy(idle_timeout=timedelta(minutes=30), absolute_timeout=timedelta(hours=12))
 SESSION_COOKIE = "__Host-creatoriqx_session"
+USER_ID = uuid.UUID(int=1)
+WORKSPACE_ID = uuid.UUID(int=2)
 
 
 class FakeClock:
@@ -51,7 +54,12 @@ def client(clock: FakeClock) -> TestClient:
 
 async def _sign_in(client: TestClient) -> tuple[str, str]:
     service: SessionService = client.app.state.session_service  # type: ignore[attr-defined]
-    session = await service.create("google-sub-1", "creator@example.com")
+    session = await service.create(
+        subject="google-sub-1",
+        email="creator@example.com",
+        user_id=USER_ID,
+        workspace_id=WORKSPACE_ID,
+    )
     client.cookies.set(SESSION_COOKIE, session.id)
     return session.id, session.csrf_token
 
@@ -71,6 +79,8 @@ async def test_session_endpoint_returns_user_and_csrf_token(client: TestClient) 
     body = response.json()
     assert body["email"] == "creator@example.com"
     assert body["subject"] == "google-sub-1"
+    assert body["user_id"] == str(USER_ID)
+    assert body["workspace_id"] == str(WORKSPACE_ID)
     assert body["csrf_token"] == csrf
 
 

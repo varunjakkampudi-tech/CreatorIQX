@@ -9,6 +9,7 @@ session can outlive the login route that created it.
 
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Response
@@ -29,6 +30,8 @@ class SessionOut(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    user_id: uuid.UUID
+    workspace_id: uuid.UUID
     subject: str
     email: str
     csrf_token: str
@@ -39,6 +42,8 @@ class SessionOut(BaseModel):
 async def read_session(response: Response, session: SessionDep) -> SessionOut:
     response.headers["Cache-Control"] = "no-store"
     return SessionOut(
+        user_id=session.user_id,
+        workspace_id=session.workspace_id,
         subject=session.subject,
         email=session.email,
         csrf_token=session.csrf_token,
