@@ -104,7 +104,9 @@ jobs:
 
       - name: Compose logs (always, for diagnosis)
         if: always()
-        run: docker compose -f infra/compose/docker-compose.yml --profile full logs --no-color > /tmp/compose.log 2>&1 || true
+        run: |
+          docker compose --env-file .env -f infra/compose/docker-compose.yml \
+            --profile full logs --no-color > /tmp/compose.log 2>&1 || true
 
       - name: Post diagnostics to the PR on failure (temporary debug aid, P0-022)
         if: failure() && github.event_name == 'pull_request'
