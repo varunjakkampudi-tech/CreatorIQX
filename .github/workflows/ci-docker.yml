@@ -37,15 +37,32 @@ jobs:
           - name: web
             dockerfile: apps/web/Dockerfile
             image: creatoriqx-web:ci
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
 
       - name: Build (${{ matrix.name }})
         run: |
-          docker build \
+          set +e
+          docker build --progress=plain \
             --file ${{ matrix.dockerfile }} \
             --tag ${{ matrix.image }} \
-            .
+            . > /tmp/build.log 2>&1
+          status=$?
+          tail -c 60000 /tmp/build.log
+          exit $status
+
+      - name: Post build log to the PR on failure (temporary debug aid, P0-021)
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tail -c 60000 /tmp/build.log > /tmp/build.tail.log
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body "$(printf '### Build log tail: %s\n```\n%s\n```' "${{ matrix.name }}" "$(cat /tmp/build.tail.log)")"
 
       - name: Verify non-root (id -u is not 0)
         run: |
