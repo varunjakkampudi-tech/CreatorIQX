@@ -1,7 +1,5 @@
 import { Sparkles } from "lucide-react";
-import productConfig from "@creatoriqx/config/product.json" with {
-  type: "json",
-};
+import productConfig from "@creatoriqx/config/product.json" with { type: "json" };
 import { cn } from "@/lib/utils";
 
 /**
@@ -37,8 +35,8 @@ export default function TokensFoundationPage() {
       </header>
       <p className="text-base text-ink-muted">{productConfig.tagline}</p>
       <p className="text-sm text-ink-muted">
-        Frontend foundation (P0-080): design tokens only. Product
-        screens follow once P0-090&apos;s wireframes are approved.
+        Frontend foundation (P0-080): design tokens only. Product screens follow
+        once P0-090&apos;s wireframes are approved.
       </p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {swatches.map((swatch) => (
