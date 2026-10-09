@@ -20,81 +20,70 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install (capture output, resolve lockfile)
-        id: install
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Install Playwright's Chromium
+        working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: E2E - CSP (capture output)
+        id: e2e
         continue-on-error: true
-        run: |
-          set +e
-          pnpm install --no-frozen-lockfile > /tmp/install.log 2>&1
-          echo "exit=$?" >> "$GITHUB_OUTPUT"
-          tail -c 55000 /tmp/install.log > /tmp/install.tail.log
+        working-directory: apps/web
+        run: pnpm run test:e2e > /tmp/e2e.log 2>&1; echo "exit=$?" >> "$GITHUB_OUTPUT"
 
-      - name: Fix formatting (root Prettier, every workspace)
-        if: always()
-        run: pnpm run format > /tmp/format.log 2>&1 || true
+      - name: Unit tests (capture output)
+        id: unit
+        continue-on-error: true
+        working-directory: apps/web
+        run: pnpm run test > /tmp/unit.log 2>&1; echo "exit=$?" >> "$GITHUB_OUTPUT"
 
-      - name: Split resolved lockfile and formatted diffs into PR-comment-sized chunks
-        if: always()
-        run: |
-          set +e
-          mkdir -p /tmp/chunks
-          cp pnpm-lock.yaml /tmp/chunks/pnpm-lock.yaml
-          git diff --stat > /tmp/format.stat.txt
-          split -b 60000 -d -a 3 /tmp/chunks/pnpm-lock.yaml /tmp/chunks/lock_part_
+      - name: Build Storybook (capture output)
+        id: sb
+        continue-on-error: true
+        working-directory: apps/web
+        run: pnpm run build-storybook > /tmp/sb.log 2>&1; echo "exit=$?" >> "$GITHUB_OUTPUT"
 
-      - name: Post install + format summary as PR comment
+      - name: Accessibility - axe scan (capture output)
+        id: a11y
+        continue-on-error: true
+        working-directory: apps/web
+        run: pnpm run test:a11y > /tmp/a11y.log 2>&1; echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Post results as a PR comment
         if: always()
         run: |
           set +e
           {
-            echo "### zz-gate-report: pnpm install (exit ${{ steps.install.outputs.exit }})"
+            echo "### zz-gate-report"
+            echo "- e2e (CSP): exit ${{ steps.e2e.outputs.exit }}"
+            echo "- unit (vitest): exit ${{ steps.unit.outputs.exit }}"
+            echo "- build-storybook: exit ${{ steps.sb.outputs.exit }}"
+            echo "- test:a11y: exit ${{ steps.a11y.outputs.exit }}"
+            echo ""
+            echo "#### e2e tail"
             echo '```'
-            cat /tmp/install.tail.log
+            tail -c 15000 /tmp/e2e.log
             echo '```'
-            echo "### format --write diffstat"
+            echo "#### unit tail"
             echo '```'
-            cat /tmp/format.stat.txt
+            tail -c 12000 /tmp/unit.log
             echo '```'
-          } > /tmp/comment.md
-          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
-        env:
-          GH_TOKEN: ${{ github.token }}
+          } > /tmp/comment1.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment1.md
 
-      - name: Post resolved pnpm-lock.yaml as chunked PR comments
-        if: always()
-        run: |
-          set +e
-          for f in /tmp/chunks/lock_part_*; do
-            {
-              echo "### zz-gate-report: pnpm-lock.yaml chunk $(basename "$f")"
-              echo '```yaml'
-              cat "$f"
-              echo '```'
-            } > /tmp/chunk_comment.md
-            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/chunk_comment.md
-          done
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Post full formatted-file list + each changed file's new content
-        if: always()
-        run: |
-          set +e
-          git diff --name-only -- . ':!pnpm-lock.yaml' > /tmp/format.files.txt
-          cat /tmp/format.files.txt
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            split -b 60000 -d -a 3 "$file" "/tmp/chunks/$(echo "$file" | tr '/' '_')_part_"
-          done < /tmp/format.files.txt
-          for f in /tmp/chunks/*_part_*; do
-            case "$f" in */lock_part_*) continue;; esac
-            {
-              echo "### zz-gate-report: formatted file chunk $(basename "$f")"
-              echo '```'
-              cat "$f"
-              echo '```'
-            } > /tmp/chunk_comment2.md
-            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/chunk_comment2.md
-          done
+          {
+            echo "### zz-gate-report (part 2)"
+            echo "#### build-storybook tail"
+            echo '```'
+            tail -c 15000 /tmp/sb.log
+            echo '```'
+            echo "#### test:a11y tail"
+            echo '```'
+            tail -c 15000 /tmp/a11y.log
+            echo '```'
+          } > /tmp/comment2.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment2.md
         env:
           GH_TOKEN: ${{ github.token }}
