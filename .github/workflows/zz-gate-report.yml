@@ -40,6 +40,12 @@ jobs:
         continue-on-error: true
         run: pnpm run format:check > /tmp/fmt.log 2>&1; echo "exit=$?" >> "$GITHUB_OUTPUT"
 
+      - name: lint (capture output)
+        id: lint
+        continue-on-error: true
+        working-directory: apps/web
+        run: pnpm run lint > /tmp/lint.log 2>&1; echo "exit=$?" >> "$GITHUB_OUTPUT"
+
       - name: Split resolved lockfile into PR-comment-sized chunks
         if: always()
         run: |
@@ -64,6 +70,10 @@ jobs:
             echo "### format:check (exit ${{ steps.fmt.outputs.exit }})"
             echo '```'
             tail -c 15000 /tmp/fmt.log
+            echo '```'
+            echo "### lint (exit ${{ steps.lint.outputs.exit }})"
+            echo '```'
+            tail -c 15000 /tmp/lint.log
             echo '```'
           } > /tmp/comment.md
           gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
