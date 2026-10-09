@@ -20,12 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: pnpm/action-setup@v6
+
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
-
-      - name: Enable corepack (pins pnpm from package.json)
-        run: corepack enable
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
