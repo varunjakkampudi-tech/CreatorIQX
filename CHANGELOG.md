@@ -6,6 +6,13 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ### Added
 
+- `apps/web` (P0-083): a design-system skeleton - Button, Input, Card and Skeleton
+  primitives under `src/components/ui`, styled only with the existing design tokens,
+  each with a Vitest + Testing Library unit test; Storybook 10 with a story per
+  primitive plus a design-tokens reference page; an accessibility gate
+  (`tests/e2e/a11y.spec.ts`, `@axe-core/playwright`) that scans every story
+  (enumerated from Storybook's own `index.json`, so a new story is covered
+  automatically) and fails on any serious or critical finding.
 - `apps/web` (P0-082): per-request Content Security Policy with a nonce (`src/proxy.ts`),
   blocking any inline script that doesn't carry it; next-intl wired in at one
   locale (`en`) with a lint rule forbidding hard-coded UI text; a Playwright
