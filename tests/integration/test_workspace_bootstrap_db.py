@@ -165,6 +165,15 @@ async def test_first_login_writes_user_workspace_membership_audit_and_outbox(
     )
     assert outbox == [("workspace.created",)]
 
+    usage = await _read_as(
+        factory,
+        workspace_id=ws,
+        user_id=user,
+        sql="SELECT name, properties FROM usage_events WHERE workspace_id = :w",
+        params={"w": ws},
+    )
+    assert usage == [("auth.login_succeeded", {"method": "google_oidc", "is_first_login": True})]
+
 
 async def test_repeat_login_returns_the_same_ids_and_writes_no_second_workspace(
     service: WorkspaceBootstrapService, factory: async_sessionmaker[AsyncSession]
@@ -199,6 +208,16 @@ async def test_repeat_login_returns_the_same_ids_and_writes_no_second_workspace(
         params={"w": ws},
     )
     assert logins == 2
+
+    usage = await _read_as(
+        factory,
+        workspace_id=ws,
+        user_id=user,
+        sql="SELECT properties->'is_first_login' FROM usage_events "
+        "WHERE workspace_id = :w AND name = 'auth.login_succeeded' ORDER BY created_at",
+        params={"w": ws},
+    )
+    assert usage == [(True,), (False,)]
 
 
 async def test_concurrent_first_logins_create_exactly_one_workspace(

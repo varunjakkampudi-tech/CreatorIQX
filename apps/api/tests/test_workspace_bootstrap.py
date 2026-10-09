@@ -126,6 +126,14 @@ async def test_audit_actions_are_written_on_creation_and_on_every_login(
     assert store.audit_actions.count("workspace.created") == 1
 
 
+async def test_a_usage_event_is_recorded_on_every_login(
+    service: WorkspaceBootstrapService, store: InMemoryPersonalWorkspaceStore
+) -> None:
+    await service.ensure_personal_workspace(subject="sub-1", email="ada@example.com")
+    await service.ensure_personal_workspace(subject="sub-1", email="ada@example.com")
+    assert store.usage_events == ["auth.login_succeeded", "auth.login_succeeded"]
+
+
 async def test_email_is_normalised_before_it_is_stored(
     service: WorkspaceBootstrapService, store: InMemoryPersonalWorkspaceStore
 ) -> None:

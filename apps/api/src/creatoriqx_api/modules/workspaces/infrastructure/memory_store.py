@@ -2,8 +2,8 @@
 
 It mirrors the SQL store's contract: idempotent per subject, one workspace per
 new user, a refusal when an email belongs to another subject. It also keeps the
-audit actions and outbox event types it would have written, so tests can assert
-on them.
+audit actions, outbox event types and usage event names it would have written,
+so tests can assert on them.
 """
 
 from __future__ import annotations
@@ -32,11 +32,13 @@ class InMemoryPersonalWorkspaceStore:
     users: dict[str, _UserRow] = field(default_factory=dict)
     audit_actions: list[str] = field(default_factory=list)
     outbox_events: list[str] = field(default_factory=list)
+    usage_events: list[str] = field(default_factory=list)
 
     async def ensure(self, command: BootstrapCommand) -> BootstrapResult:
         existing = self.users.get(command.subject)
         if existing is not None:
             self.audit_actions.append("auth.login_succeeded")
+            self.usage_events.append("auth.login_succeeded")
             return BootstrapResult(
                 user_id=existing.user_id,
                 workspace_id=existing.workspace_id,
@@ -53,6 +55,7 @@ class InMemoryPersonalWorkspaceStore:
         )
         self.audit_actions.extend(["user.created", "workspace.created", "auth.login_succeeded"])
         self.outbox_events.append("workspace.created")
+        self.usage_events.append("auth.login_succeeded")
         return BootstrapResult(
             user_id=command.user_id,
             workspace_id=command.workspace_id,

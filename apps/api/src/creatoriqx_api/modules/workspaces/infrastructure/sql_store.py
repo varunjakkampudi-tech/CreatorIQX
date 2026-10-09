@@ -26,6 +26,8 @@ from creatoriqx_api.modules.audit.infrastructure.tables import AuditLog
 from creatoriqx_api.modules.identity.domain.roles import Role
 from creatoriqx_api.modules.identity.infrastructure.tables import User
 from creatoriqx_api.modules.jobs.infrastructure.tables import OutboxEvent
+from creatoriqx_api.modules.telemetry.domain.usage_event import sanitize_properties
+from creatoriqx_api.modules.telemetry.infrastructure.tables import UsageEvent
 from creatoriqx_api.modules.workspaces.application.ports import BootstrapCommand
 from creatoriqx_api.modules.workspaces.domain.bootstrap import (
     NO_WORKSPACE,
@@ -76,6 +78,13 @@ async def _ensure(session: AsyncSession, command: BootstrapCommand) -> Bootstrap
         resource_type="user",
         resource_id=user_id,
         correlation_id=command.correlation_id,
+    )
+    await _telemetry(
+        session,
+        workspace_id=workspace_id,
+        actor_user_id=user_id,
+        name="auth.login_succeeded",
+        properties={"method": "google_oidc", "is_first_login": user_created},
     )
     return BootstrapResult(
         user_id=user_id,
@@ -192,6 +201,35 @@ async def _audit(
             resource_type=resource_type,
             resource_id=resource_id,
             correlation_id=correlation_id,
+        )
+    )
+    await session.flush()
+
+
+async def _telemetry(
+    session: AsyncSession,
+    *,
+    workspace_id: uuid.UUID,
+    actor_user_id: uuid.UUID,
+    name: str,
+    properties: dict[str, object] | None,
+) -> None:
+    """Append one usage event in the same transaction as the login it describes.
+
+    ``usage_events`` is tenant-scoped (unlike ``outbox_events``), so the
+    tenant context is re-asserted here even though ``_audit`` just set it to
+    the same workspace - the two calls must not be assumed to run in the
+    order a future refactor keeps them in. Properties go through the same
+    domain allow-list ``P0-062``'s own sink (``SqlTelemetrySink``) uses, so a
+    caller can never widen what gets stored by calling this directly instead.
+    """
+    await set_tenant_context(session, workspace_id=workspace_id, user_id=actor_user_id)
+    session.add(
+        UsageEvent(
+            workspace_id=workspace_id,
+            user_id=actor_user_id,
+            name=name,
+            properties=sanitize_properties(name, properties),
         )
     )
     await session.flush()
