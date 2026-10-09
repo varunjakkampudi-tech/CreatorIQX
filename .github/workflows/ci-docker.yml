@@ -1,11 +1,12 @@
 name: ci-docker
 
 # Builds the production images for api, worker and web (P0-021) and proves
-# each one runs as a non-root user. The sandbox this project is built in has
-# no local Docker daemon, so this workflow is the only place `docker build`
-# and `docker run` actually execute; it is required evidence for the
-# ticket's acceptance test ("All images build; `docker run ... id -u` is not
-# 0"), not an optional extra.
+# each one runs as a non-root user, then (P0-022) boots the full containerized
+# stack (`dev.py up-full`'s compose profile) and proves it actually serves
+# traffic end to end: /healthz, /readyz and the web app's "/" all answer, and
+# the worker answers a Celery ping. The sandbox this project is built in has
+# no local Docker daemon, so this workflow is the only place any of this
+# actually executes.
 
 on:
   push:
@@ -58,3 +59,48 @@ jobs:
 
       - name: Inspect image size
         run: docker image inspect ${{ matrix.image }} --format '{{ .Size }}' | numfmt --to=iec-i --suffix=B
+
+  full-stack:
+    name: Full stack boots, migrates and seeds (P0-022)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.2.0 # no floating major tag is published
+        with:
+          enable-cache: true
+
+      - name: Install Python dependencies from the lockfile (for migrate/seed)
+        run: uv sync --package creatoriqx-api --locked
+
+      - name: Start the full profile (postgres, redis, api, worker, web)
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env -f infra/compose/docker-compose.yml \
+            --profile full up --detach --build --wait --wait-timeout 180
+
+      - name: Apply migrations (owner role)
+        run: uv run python scripts/dev.py migrate
+
+      - name: Seed the second demo workspace
+        run: uv run python scripts/dev.py seed
+
+      - name: Smoke-check every service answers
+        run: |
+          curl -fsS http://127.0.0.1:58000/healthz
+          curl -fsS http://127.0.0.1:58000/readyz
+          curl -fsS http://127.0.0.1:3000/ | head -c 200
+          docker compose --env-file .env -f infra/compose/docker-compose.yml --profile full \
+            exec -T worker celery -A \
+            creatoriqx_api.modules.jobs.infrastructure.celery_app.celery_app inspect ping
+
+      - name: Compose logs (always, for diagnosis)
+        if: always()
+        run: |
+          docker compose --env-file .env -f infra/compose/docker-compose.yml \
+            --profile full logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose --env-file .env -f infra/compose/docker-compose.yml --profile full down -v

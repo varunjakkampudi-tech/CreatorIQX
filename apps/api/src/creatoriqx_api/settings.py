@@ -27,7 +27,9 @@ LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR"]
 class Settings(BaseSettings):
     """Validated runtime configuration. Unknown variables are ignored."""
 
-    model_config = SettingsConfigDict(env_file=None, extra="ignore", frozen=True)
+    model_config = SettingsConfigDict(
+        env_file=None, extra="ignore", frozen=True, populate_by_name=True
+    )
 
     app_env: AppEnv = "local"
     log_level: LogLevel = "INFO"
@@ -43,10 +45,22 @@ class Settings(BaseSettings):
     product_config_path: Path = _DEFAULT_PRODUCT_CONFIG
     readiness_timeout_seconds: float = Field(default=2.0, gt=0, le=10)
 
-    # OIDC login (ADR 0004): login-only client, identity scopes only.
-    oidc_client_id: str = Field(default="", description="Google OAuth client ID for login")
+    # OIDC login (ADR 0004): login-only client, identity scopes only. The
+    # validation_alias matches .env.example's GOOGLE_LOGIN_CLIENT_ID/SECRET
+    # (pydantic-settings would otherwise look for the bare field names,
+    # OIDC_CLIENT_ID/SECRET, so .env's values were silently never read -
+    # found while writing the P0-022 quickstart). populate_by_name=True above
+    # keeps the field name itself usable too, for Settings(oidc_client_id=...)
+    # in tests and other direct construction.
+    oidc_client_id: str = Field(
+        default="",
+        validation_alias="GOOGLE_LOGIN_CLIENT_ID",
+        description="Google OAuth client ID for login",
+    )
     oidc_client_secret: SecretStr = Field(
-        default=SecretStr(""), description="Google OAuth client secret for login"
+        default=SecretStr(""),
+        validation_alias="GOOGLE_LOGIN_CLIENT_SECRET",
+        description="Google OAuth client secret for login",
     )
     auth_allowed_emails: str = Field(
         default="",

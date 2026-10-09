@@ -54,10 +54,19 @@ RUN groupadd --system --gid 10001 creatoriqx \
     && useradd --system --uid 10001 --gid creatoriqx --no-create-home creatoriqx
 
 COPY --from=builder --chown=creatoriqx:creatoriqx /app/.venv /app/.venv
+# settings.py's product_config_path defaults to a path *relative to the
+# installed creatoriqx_api package* (packages/config/product.json, four
+# directories up) - true for an editable install from the repo (dev.py api),
+# but not here: uv installs a built wheel into site-packages, nowhere near
+# packages/config. Ship the one file it needs and point PRODUCT_CONFIG_PATH
+# (an existing Settings field, already env-overridable) at it, rather than
+# bundling the whole shared config package into the wheel for one string.
+COPY --chown=creatoriqx:creatoriqx packages/config/product.json /app/product-config/product.json
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PRODUCT_CONFIG_PATH=/app/product-config/product.json
 
 USER creatoriqx
 WORKDIR /app

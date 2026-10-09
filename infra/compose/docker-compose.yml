@@ -1,9 +1,19 @@
 # CreatorIQX local stack. Run from the repo root through the task runner:
-#   py scripts/dev.py up     (Windows)   |   python scripts/dev.py up
-# App services (api, worker, web, mcp-server) are added by P0-021 and P0-022.
+#   py scripts/dev.py up        (Windows)   |   python scripts/dev.py up
+#   py scripts/dev.py up-full   (Windows)   |   python scripts/dev.py up-full
 #
-# Ports bind to 127.0.0.1 only and default to 55432 / 56379 so they never
-# collide with a Postgres or Redis already installed on the machine.
+# `up` (no profile) starts only postgres and redis - what CI and `dev.py api`
+# need, unchanged since P0-020. `up-full` (profile "full") additionally
+# builds and starts api, worker and web from the P0-021 Dockerfiles, so a
+# fresh clone can reach a running app with one command (P0-022). A service
+# under a profile is skipped by a plain `docker compose up`, so this never
+# changes what CI's bare `docker compose ... up` step starts.
+#
+# mcp-server is not here: it is P0-070's job, deferred to the start of
+# Phase 1A (same scope note as P0-021's app images).
+#
+# Ports bind to 127.0.0.1 only and default to 55432 / 56379 / 58000 / 3000 so
+# they never collide with services already installed on the machine.
 
 name: creatoriqx
 
@@ -43,6 +53,93 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+
+  api:
+    profiles: ["full"]
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file: ../../.env
+    environment:
+      # Inside the compose network, the data services are reachable by
+      # service name, not by the host-published 127.0.0.1 ports .env uses
+      # for host-side tooling (dev.py api, pytest) - override just these.
+      DATABASE_APP_URL: postgresql+asyncpg://creatoriqx_app:${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in .env}@postgres:5432/creatoriqx
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-58000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/readyz', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  worker:
+    profiles: ["full"]
+    build:
+      context: ../..
+      dockerfile: apps/worker/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Same logical-db split as .env's CELERY_BROKER_URL (ADR 0003), just
+      # addressed by the compose service name instead of the host port.
+      CELERY_BROKER_URL: redis://redis:6379/1
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "celery",
+          "-A",
+          "creatoriqx_api.modules.jobs.infrastructure.celery_app.celery_app",
+          "inspect",
+          "ping",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  web:
+    profiles: ["full"]
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      API_ORIGIN: http://api:8000
+    ports:
+      - "127.0.0.1:${WEB_HOST_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
 
 volumes:
   pgdata:
