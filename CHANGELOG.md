@@ -6,6 +6,13 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ### Added
 
+- `jobs` module (P0-060): a `TaskQueue` port (`enqueue(JobRequest) -> JobHandle`,
+  ADR 0003) with a `CeleryTaskQueue` adapter backed by a Redis broker on its own
+  logical database, separate from sessions/quota. One working job, `ops.ping`,
+  plus a test-only `ops.flaky` proving retry-then-failed over a real embedded
+  worker and real Redis. New `apps/worker` package: a thin Celery CLI wrapper
+  with no task code of its own. New import-linter contract `jobs-celery-boundary`:
+  only `jobs.infrastructure` may import `celery`.
 - `apps/web` (P0-012): TS/JS quality gates - `@typescript-eslint/no-explicit-any`
   raised to `error` (the recommended preset only warns), and dependency-cruiser
   (`.dependency-cruiser.cjs`) enforcing no import cycles and that the shared
