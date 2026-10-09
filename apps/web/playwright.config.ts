@@ -10,6 +10,11 @@ import { defineConfig } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests/e2e",
+  // a11y.spec.ts has its own config (playwright.storybook.config.ts) that
+  // serves the static Storybook build instead of the Next.js app - without
+  // this it still gets picked up here too (testDir is a directory scan) and
+  // fails every /index.json request against the wrong webServer.
+  testIgnore: "a11y.spec.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
