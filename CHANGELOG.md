@@ -14,6 +14,10 @@ scorecard). Everything below is Foundation: tooling, auth, tenancy, CI,
 Docker images, security scans and docs. No product features (section 4 of
 the spec) exist yet - those start in Phase 1A.
 
+The `v0.1.0` git tag itself is pending the owner: this build session's proxy
+refuses to create git tags or GitHub releases. See `docs/PROGRESS.md`'s
+"Owner actions pending" for the exact commands to push it.
+
 ### Fixed
 
 - `Settings.oidc_client_id`/`oidc_client_secret` now actually read
