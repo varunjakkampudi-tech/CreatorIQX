@@ -1,0 +1,35 @@
+{
+  "name": "@creatoriqx/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CreatorIQX web app (Next.js App Router). Frontend foundation: design tokens, no screens yet (spec section 11 UI screens wait on P0-090 wireframe approval).",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@creatoriqx/config": "workspace:*",
+    "clsx": "2.1.1",
+    "lucide-react": "1.53.0",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tailwind-merge": "3.7.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@next/eslint-plugin-next": "16.4.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "26.6.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "10.12.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2",
+    "typescript-eslint": "8.71.1"
+  }
+}
