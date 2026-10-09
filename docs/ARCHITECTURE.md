@@ -259,3 +259,38 @@ flowchart LR
     judge -- yes --> ok["Isolated"]
     judge -- no --> fail["Harness fails: tenant isolation hole"]
 ```
+
+## Frontend foundation (P0-080)
+
+`apps/web` is a Next.js App Router app, not yet any product screen. Spec
+section 11's named UI screens (onboarding, the video board, the Video
+Workspace, the approval diff, YouTube Sync) wait on P0-090's written
+wireframe approval; this ticket is the app shell and design tokens those
+screens will be built on, so it does not touch that gate.
+
+Design tokens (color, the 8px spacing grid, type scale, radius, motion) are
+CSS custom properties defined once in `src/app/globals.css`, each mapped to a
+Tailwind v4 `@theme` utility (`bg-surface`, `text-ink`, ...). Light values
+live on `:root`; dark values override the same properties under
+`prefers-color-scheme: dark` (unless `data-theme="light"` is forced) and
+under an explicit `data-theme="dark"`, so a component's class never changes
+between themes — only what the token resolves to does. A component reaches
+every color through a token utility; a lint rule
+(`eslint.config.mjs`, `no-restricted-syntax` on hex-literal nodes) forbids a
+raw hex literal anywhere in `src/**/*.ts(x)`, so the only way to add a color
+is to add a token.
+
+```mermaid
+flowchart LR
+    comp["Component className=\"bg-surface\""] --> theme["@theme: --color-surface: var(--surface)"]
+    theme --> root[":root { --surface: #fff }"]
+    theme --> dark["prefers-color-scheme: dark or data-theme=dark { --surface: #0b1220 }"]
+    lint["eslint no-restricted-syntax"] -. blocks .-> hex["className=\"bg-[#4f46e5]\""]
+```
+
+`cn()` (`src/lib/utils.ts`, clsx + tailwind-merge) and `components.json` are
+the shadcn/ui-style init; no component primitives exist yet (P0-083 adds
+Button/Input/Card/Skeleton). `next.config.ts` rewrites `/api/*` to the local
+FastAPI backend so the dev server runs on a single origin. The product name
+comes from `@creatoriqx/config/product.json`, read by both this app and the
+API, never hard-coded in either.

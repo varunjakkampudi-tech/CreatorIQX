@@ -6,6 +6,12 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ### Added
 
+- `apps/web`: Next.js App Router frontend foundation - design tokens (color, 8px
+  spacing grid, type scale, radius, motion) as CSS variables for light and dark,
+  a shadcn/ui-style init (`components.json`, `cn()`), lucide icons, the `/api`
+  rewrite to the local backend, and a lint rule forbidding raw hex literals in
+  components. Not a product screen; those wait on P0-090's wireframe approval
+  (P0-080).
 - RBAC per workspace: `require_role()` gates every route that touches tenant data,
   resolving the workspace and user from the session and re-checking membership on
   every request, so a removed or demoted member loses access at once. Roles are
