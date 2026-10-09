@@ -1,6 +1,70 @@
 {
   "components": {
     "schemas": {
+      "CurrentWorkspaceOut": {
+        "description": "The session's workspace and what the caller may do in it.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "role"
+        ],
+        "title": "CurrentWorkspaceOut",
+        "type": "object"
+      },
+      "MeOut": {
+        "description": "The caller's own identity and current workspace role.",
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "workspace_id",
+          "role"
+        ],
+        "title": "MeOut",
+        "type": "object"
+      },
+      "Role": {
+        "description": "A member's role within one workspace.",
+        "enum": [
+          "owner",
+          "editor",
+          "viewer"
+        ],
+        "title": "Role",
+        "type": "string"
+      },
       "SessionOut": {
         "description": "The signed-in user and the token the client must send on unsafe requests.",
         "properties": {
@@ -83,6 +147,48 @@
         "summary": "Current session",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "read_me_api_v1_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The signed-in user",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/workspaces/current": {
+      "get": {
+        "operationId": "read_current_workspace_api_v1_workspaces_current_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentWorkspaceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The current workspace",
+        "tags": [
+          "workspaces"
         ]
       }
     },
