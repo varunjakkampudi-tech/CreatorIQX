@@ -37,14 +37,16 @@ jobs:
 
       - name: Run the gates and keep going even if one fails
         run: |
+          set +e
           {
             echo "## Gate results for ${{ github.sha }}"
             echo '```'
-            (pnpm run format:check 2>&1; echo "format:check exit=$?")
-            (pnpm --filter @creatoriqx/api-client run typecheck 2>&1; echo "api-client typecheck exit=$?")
-            (pnpm --filter @creatoriqx/web run lint 2>&1; echo "lint exit=$?")
-            (pnpm --filter @creatoriqx/web run typecheck 2>&1; echo "typecheck exit=$?")
-            (pnpm --filter @creatoriqx/web run build 2>&1; echo "build exit=$?")
+            (set +e; pnpm run format:check 2>&1; echo "format:check exit=$?")
+            (set +e; pnpm --filter @creatoriqx/api-client run generate:check 2>&1; echo "api-client generate:check exit=$?")
+            (set +e; pnpm --filter @creatoriqx/api-client run typecheck 2>&1; echo "api-client typecheck exit=$?")
+            (set +e; pnpm --filter @creatoriqx/web run lint 2>&1; echo "lint exit=$?")
+            (set +e; pnpm --filter @creatoriqx/web run typecheck 2>&1; echo "typecheck exit=$?")
+            (set +e; pnpm --filter @creatoriqx/web run build 2>&1; echo "build exit=$?")
             echo '```'
           } > "$RUNNER_TEMP/gates.md"
 
