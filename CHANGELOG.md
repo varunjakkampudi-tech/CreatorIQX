@@ -6,6 +6,11 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ### Added
 
+- `packages/api-client`: a typed API client generated from `openapi.json` by
+  openapi-typescript, with a `generate:check` drift guard. `apps/web` wires it into
+  TanStack Query (`openapi-react-query`, a `QueryClientProvider`) and a typed
+  `useCurrentUser()` calling `GET /api/v1/me` - the acceptance test's typed call, not
+  yet rendered by any page (P0-081).
 - `apps/web`: Next.js App Router frontend foundation - design tokens (color, 8px
   spacing grid, type scale, radius, motion) as CSS variables for light and dark,
   a shadcn/ui-style init (`components.json`, `cn()`), lucide icons, the `/api`
