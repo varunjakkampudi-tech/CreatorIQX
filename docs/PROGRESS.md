@@ -10,7 +10,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | Last PASS ticket | **P0-053** — E6 Identity and access, workspace bootstrap (the reference hexagonal module) (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-020, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-100) |
 | Open BLOCKED items | P0-052 (real Google login, owner action). P0-090 (wireframe approval, owner action) |
 | Build environment | Session 1: owner's Windows 11 machine (Claude Desktop Commander), no longer reachable. Session 2: Linux sandbox, clone at `/home/claude/creatoriqx`. PyPI and files.pythonhosted.org return proxy 403 there (egress policy), so no Python tool can run locally. **GitHub Actions is the verification environment**: gates are run by pushing and reading the result. Actions log blobs are also unreachable from the sandbox, so a temporary workflow posted gate output as a pull request comment; it was deleted once P0-053 was green |
-| Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works. P0-053 was developed on `wip/p0-053-workspace-bootstrap` and reviewed in pull request #1 |
+| Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works. **P0-053 is green in pull request #1 on `wip/p0-053-workspace-bootstrap` and waits for the owner to review and merge it.** `main` is at `87441a8` (P0-051) until then |
 
 ## Ticket log
 
@@ -72,7 +72,11 @@ Read this file at the start of every session. Update it at the end of every sess
 
 ## Exact next step
 
-**P0-054** (RBAC and tenant isolation): `require_role()` dependency, `GET /api/v1/me`,
+**First: the owner merges pull request #1** (P0-053). Both workflows are green on it
+and the ticket is recorded PASS with evidence. A squash merge keeps one commit per
+ticket, matching the existing history on `main`.
+
+Then **P0-054** (RBAC and tenant isolation): `require_role()` dependency, `GET /api/v1/me`,
 `GET /api/v1/workspaces/current`, and the cross-tenant harness that enumerates every
 route in the OpenAPI document and calls it as a member of another workspace expecting
 denial, plus a seeded unprotected route that makes the harness fail. The session already
