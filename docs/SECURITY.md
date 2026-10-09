@@ -6,7 +6,28 @@ Security model and threat model. Target: OWASP ASVS Level 2, OWASP Top 10, OWASP
 |---|---|
 | Version | STRIDE v0 (Phase 0 scope) |
 | Date | 2026-10-08 |
-| Reviewed at | Phase 0 planning; next review at the Phase 0 gate (P0-110) |
+| Reviewed at | Phase 0 planning; reviewed again at the Phase 0 gate (P0-110, 2026-10-09) - no new threats found; still-open items noted below; next review at the Phase 1A gate |
+
+## Phase 0 gate review (P0-110)
+
+Re-read every row above against the Phase 0 ticket log. No new Phase 0 threat
+found. Two rows reference tickets that are not yet built, and both are
+tracked outside this document rather than hidden here:
+
+- **T-S4** (test-only identity stub reachable in production) names P0-103 as
+  its control. P0-103 is **BLOCKED**: the stub's own acceptance test needs a
+  login page and app shell to exercise, and those need the owner's wireframe
+  approval (P0-090). T-S4 stays open until P0-090 is approved and P0-091,
+  P0-092 and P0-103 are built - there is no stub yet, so there is also
+  nothing insecure deployed yet.
+- **T-D1** (login/callback flooding) names P0-055 as its control, deferred to
+  the start of Phase 1A by the Option-B time-box decision. Accepted for
+  Phase 0 because nothing is exposed beyond the developer's machine (see
+  "Accepted risks" below); must land before Phase 1E's hosted deployment.
+
+Every other High-rated threat (T-S1 to T-S3, T-T1 to T-T3, T-I1 to T-I3,
+T-E1, T-E2) has a merged, CI-verified control. The Phase 0 scorecard
+(`docs/PROGRESS.md`) records this review under its Security row.
 
 ## Reporting a vulnerability
 
