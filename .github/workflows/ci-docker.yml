@@ -64,9 +64,6 @@ jobs:
     name: Full stack boots, migrates and seeds (P0-022)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v7
 
@@ -79,70 +76,30 @@ jobs:
 
       - name: Start the full profile (postgres, redis, api, worker, web)
         run: |
-          set +e
           cp .env.example .env
           docker compose --env-file .env -f infra/compose/docker-compose.yml \
-            --profile full up --detach --build --wait --wait-timeout 180 > /tmp/up.log 2>&1
-          status=$?
-          tail -c 50000 /tmp/up.log
-          exit $status
+            --profile full up --detach --build --wait --wait-timeout 180
 
       - name: Apply migrations (owner role)
-        run: |
-          set +e
-          uv run python scripts/dev.py migrate > /tmp/migrate.log 2>&1
-          status=$?
-          tail -c 30000 /tmp/migrate.log
-          exit $status
+        run: uv run python scripts/dev.py migrate
 
       - name: Seed the second demo workspace
-        run: |
-          set +e
-          uv run python scripts/dev.py seed > /tmp/seed.log 2>&1
-          status=$?
-          tail -c 30000 /tmp/seed.log
-          exit $status
+        run: uv run python scripts/dev.py seed
 
       - name: Smoke-check every service answers
         run: |
-          set +e
-          {
-            curl -fsS http://127.0.0.1:58000/healthz
-            echo
-            curl -fsS http://127.0.0.1:58000/readyz
-            echo
-            curl -fsS http://127.0.0.1:3000/ | head -c 200
-            echo
-            docker compose --env-file .env -f infra/compose/docker-compose.yml --profile full \
-              exec -T worker celery -A \
-              creatoriqx_api.modules.jobs.infrastructure.celery_app.celery_app inspect ping
-          } > /tmp/smoke.log 2>&1
-          status=$?
-          tail -c 30000 /tmp/smoke.log
-          exit $status
+          curl -fsS http://127.0.0.1:58000/healthz
+          curl -fsS http://127.0.0.1:58000/readyz
+          curl -fsS http://127.0.0.1:3000/ | head -c 200
+          docker compose --env-file .env -f infra/compose/docker-compose.yml --profile full \
+            exec -T worker celery -A \
+            creatoriqx_api.modules.jobs.infrastructure.celery_app.celery_app inspect ping
 
       - name: Compose logs (always, for diagnosis)
         if: always()
         run: |
           docker compose --env-file .env -f infra/compose/docker-compose.yml \
-            --profile full logs --no-color > /tmp/compose.log 2>&1 || true
-
-      - name: Post diagnostics to the PR on failure (temporary debug aid, P0-022)
-        if: failure() && github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          {
-            for f in up migrate seed smoke compose; do
-              echo "### $f log tail"
-              echo '```'
-              tail -c 10000 "/tmp/$f.log" 2>/dev/null
-              echo '```'
-            done
-          } > /tmp/report.md
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --body-file /tmp/report.md
+            --profile full logs --no-color
 
       - name: Tear down
         if: always()
