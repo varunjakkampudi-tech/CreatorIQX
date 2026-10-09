@@ -4,8 +4,21 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ## [Unreleased]
 
+### Fixed
+
+- `Settings.oidc_client_id`/`oidc_client_secret` now actually read
+  `GOOGLE_LOGIN_CLIENT_ID`/`GOOGLE_LOGIN_CLIENT_SECRET` from the environment
+  (a `validation_alias` was missing, so `.env`'s values had silently never
+  been read since these fields were introduced).
+
 ### Added
 
+- `dev.py up-full` (P0-022): one-command full stack - builds and starts
+  postgres, redis, api, worker and web (a new compose profile `full`, so
+  CI's and `dev.py up`'s existing plain `up` are unaffected), applies
+  migrations, and seeds a second demo workspace (`dev.py seed`) for manual
+  cross-tenant checks, through the same code path a real login uses. New
+  `ci-docker` job `full-stack` proves the whole thing end to end in CI.
 - Production Docker images for `apps/api`, `apps/worker` and `apps/web` (P0-021):
   multi-stage builds, each ending in a non-root final stage. The Python images
   follow the official `uv` workspace pattern (`uv sync --package <member>`,
