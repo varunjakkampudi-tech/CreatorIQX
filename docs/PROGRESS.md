@@ -4,11 +4,11 @@ Read this file at the start of every session. Update it at the end of every sess
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-10-09 (session 2, Linux sandbox) — P0-102 recorded |
+| Last updated | 2026-10-09 (session 2, Linux sandbox) — P0-103 recorded, running the P0-110 scorecard |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation, implementation in progress** (plan approved by owner 2026-10-08) |
 | Last PASS ticket | **P0-102** — E12 CI and security, security scans (gitleaks blocking, pip-audit/pnpm audit/Trivy report-only, CodeQL, Dependabot) (also PASS: P0-001 to P0-007, P0-010 to P0-013, P0-020, P0-021, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-053, P0-054, P0-060, P0-080 to P0-083, P0-100, P0-101) |
-| Open BLOCKED items | P0-052 (real Google login, owner action). P0-090 (wireframe approval, owner action). P0-022 (one-command setup is built and CI-verified end to end, but its acceptance test - a timed walkthrough to a logged-in dashboard - needs both P0-052 and P0-090 to be unblocked first) |
+| Open BLOCKED items | P0-052 (real Google login, owner action). P0-090 (wireframe approval, owner action). P0-022 (one-command setup is built and CI-verified end to end, but its acceptance test - a timed walkthrough to a logged-in dashboard - needs both P0-052 and P0-090 to be unblocked first). P0-091/P0-092 (login screen, app shell - no UI code before P0-090 is approved, per spec section 11 and the explicit CLAUDE.md rule). P0-103 (E2E on login and shell - transitively blocked on P0-092) |
 | Build environment | Session 1: owner's Windows 11 machine (Claude Desktop Commander), no longer reachable. Session 2: Linux sandbox, clone at `/home/claude/creatoriqx`. PyPI and files.pythonhosted.org return proxy 403 there (egress policy); the npm registry returns a DNS failure there too (same effective restriction). No Python or JS package install runs locally, and there is no local Docker daemon either, so `docker build`/`docker run` run only in CI too. **GitHub Actions is the verification environment**: gates are run by pushing and reading the result. Actions log blobs and artifact blobs are also unreachable from the sandbox, so a temporary workflow posted gate output (and the resolved `pnpm-lock.yaml`, and for P0-081 the generated `schema.d.ts`, and for P0-021 docker build log tails, in ordered parts) as pull request comments; it is deleted once the real ticket is green. `WebFetch`/`WebSearch` can reach the npm registry even though the sandbox shell cannot, so current dependency versions are still checked against the registry before pinning them |
 | Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works. **main is current.** PRs #1 (P0-053), #2 (P0-054, retargeted to `main` after a gap was found and fixed in #4), #3 (P0-050 backlog-sync), #4 (P0-054's actual code), #5 (P0-080), #6 (P0-081), #7 (P0-082), #8 (P0-083), #9 (P0-012), #10 (P0-060), #11 (docs for P0-060), #12 (P0-021), #13 (docs for P0-021), #14 (P0-022), #15 (docs for P0-022), and
 #17 (docs for P0-101) are all merged, plus #18 (P0-102's security scans and Dependabot). PR #16 (P0-101's seeded-failure verification, branch `ci/seed-fail-js`) and #19 (P0-102's gitleaks seeded-failure verification, branch `ci/seed-fail-gitleaks`) were each opened to prove a gate turns red, confirmed, then **closed without merging** - both throwaway verification PRs, not landed code. PRs from #6 onward were self-merged directly by Claude (squash) once every check went green, per the owner's instruction to stop waiting for manual PR merges |
@@ -52,6 +52,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-022 | BLOCKED | Built and CI-verified end to end: `dev.py up-full` boots postgres/redis/api/worker/web (new compose profile `full`, gated so it never changes what CI's plain `up` starts), applies all 5 migrations, seeds a second demo workspace (`seed_demo_workspace.py`, through the real `WorkspaceBootstrapService` with a fixed fake Google subject - same tenant-safe path a real login uses). `ci-docker`'s new `full-stack` job (run 37959528756) proves it for real: `/healthz` and `/readyz` return 200, the web app's `/` renders, the worker answers a Celery `inspect ping`. Fixed two real defects found doing this: `GOOGLE_LOGIN_CLIENT_ID`/`SECRET` were never actually read from the environment (wrong implied env-var name - see decisions below), and the api image crashed on its first request (`product_config_path` assumed an editable install). The ticket's literal acceptance test - a timed fresh-clone-to-logged-in-dashboard walkthrough under 30 minutes - cannot be completed from here: there is no dashboard yet (P0-090, BLOCKED on the owner) and signing in needs a real Google OAuth client in `.env` (P0-052, BLOCKED on the owner). PR #14 self-merged (commit `6a18e2c`) |
 | P0-101 | PASS | `ci-js` (pnpm install --frozen-lockfile, ESLint, tsc, Vitest, dependency-cruiser, Storybook build) is green on `main` (e.g. run 37960240466). Seeded-failure verification: branch `ci/seed-fail-js`, PR #16, one deliberately-broken Vitest assertion in `apps/web/src/components/ui/button.test.tsx` made run 37960356348 fail with conclusion `failure` at step "Unit tests - UI primitives (apps/web, P0-083)" - proving the gate actually catches a real test failure, not just a lint issue. Seed reverted, PR #16 closed without merging, local branch deleted (no production code changed) |
 | P0-102 | PASS | New `ci-security` workflow (PR #18, commit `dd7aa4b`): gitleaks (pinned to 8.30.0, matching the pre-commit hook) runs **blocking**; pip-audit and pnpm audit run report-only (`continue-on-error: true`, results in the job summary); Trivy scans all three images (api/worker/web) report-only (`exit-code: '0'`, severity CRITICAL/HIGH). New `codeql.yml`: GitHub code scanning for Python and JS/TypeScript, report-only (free on this public personal-account repo per OQ-09). New `.github/dependabot.yml`: uv, npm (pnpm), docker (x3 Dockerfiles), github-actions ecosystems. All checks green on `main`. Seeded-failure verification (PR #19, branch `ci/seed-fail-gitleaks`, closed without merging): a fake GitHub PAT appended to `README.md` made the "Secret scan (gitleaks, blocking)" job fail (runs 37962786493, 37962804446), confirming gitleaks actually blocks a seeded fake secret. Seed reverted, local branch deleted |
+| P0-103 | BLOCKED | Nothing buildable: the ticket's direct prerequisite P0-092 (app shell and empty dashboard) depends on P0-091 (login screen), which depends on P0-090 approved wireframes - still BLOCKED on the owner's written approval, and CLAUDE.md explicitly forbids UI code before that approval. The acceptance test (Playwright plus axe on login and shell, using a test-only OIDC stub) has no login page or shell to exercise yet. Revisit once P0-090 is approved and P0-091/P0-092 are built |
 
 ## Owner actions pending
 
@@ -124,22 +125,20 @@ Read this file at the start of every session. Update it at the end of every sess
 
 ## Exact next step
 
-P0-102 (security scans) is done: `ci-security` (gitleaks blocking; pip-audit,
-pnpm audit, Trivy report-only) and `codeql.yml` are green on `main`, Dependabot
-is configured, and gitleaks was proven to turn `ci-security` red on a seeded
-fake secret (PR #19, closed without merging once confirmed). Continue in
-backlog order:
-
-- **P0-103** End-to-end in CI: Playwright + axe on login and shell, using a test-only
-  OIDC stub gated to `APP_ENV=test`, plus a production-config test proving the stub
-  404s and isn't importable outside that env. Depends on P0-092 (status not yet
-  checked this session) and P0-021 (done).
-- **P0-110** Phase 0 scorecard and the v0.1.0 tag.
+P0-102 (security scans) is PASS and P0-103 is recorded BLOCKED (it needs
+P0-092, which needs the approved login/shell screens, which need P0-090).
+Every other Phase 0 ticket is now at a terminal outcome: PASS, BLOCKED, or
+deferred to Phase 1A by the Option-B time-box decision. **Next: run P0-110**
+- the Phase 0 quality scorecard (spec §17), reviewing STRIDE v0, marking each
+row PASS, BLOCKED/N-A with a reason, or FAIL, then updating PROGRESS,
+bumping CHANGELOG to `0.1.0`, and tagging `v0.1.0`.
 
 When the owner resolves P0-052 (real Google login) and P0-090 (wireframe
-approval, and the screens that follow it), come back and run P0-022's actual
+approval, and the screens that follow it), come back and: run P0-022's actual
 acceptance test (fresh clone, `dev.py up-full`, time to a logged-in dashboard)
-and flip it from BLOCKED to PASS or FAIL.
+and flip it from BLOCKED to PASS or FAIL; build P0-091, P0-092, then P0-103;
+and re-run the P0-110 scorecard rows that were marked BLOCKED/N-A because of
+this.
 
 Deferred to the start of Phase 1A by the time-box decision (Option B): P0-055,
 P0-061, P0-062, P0-070.
