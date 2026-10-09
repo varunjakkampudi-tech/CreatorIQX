@@ -1,0 +1,38 @@
+# Root .dockerignore (P0-021): applies to every image built from this repo
+# root as its build context (apps/api/Dockerfile, apps/worker/Dockerfile,
+# apps/web/Dockerfile all build from "."). Keeps the context small and keeps
+# host-only artifacts (venvs, node_modules, build output, secrets) out of
+# any image layer, even transiently.
+
+.git
+.github
+
+# Python
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# Node / pnpm
+**/node_modules
+apps/web/.next
+.turbo
+
+# Docs, infra files not needed inside an image
+docs
+infra/compose
+*.md
+
+# Secrets and local env
+.env
+.env.*
+!.env.example
+
+# Editors, OS cruft
+.vscode
+.idea
+**/.DS_Store
