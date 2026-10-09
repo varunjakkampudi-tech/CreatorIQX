@@ -17,10 +17,7 @@ export function Skeleton({ className, ...props }: SkeletonProps) {
   return (
     <div
       aria-hidden="true"
-      className={cn(
-        "animate-pulse rounded-md bg-border",
-        className,
-      )}
+      className={cn("animate-pulse rounded-md bg-border", className)}
       {...props}
     />
   );
