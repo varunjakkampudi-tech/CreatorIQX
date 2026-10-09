@@ -32,7 +32,7 @@ MonotonicClock = Callable[[], float]
 # capacity, before deciding whether cost can be spent. The key's TTL is set to
 # just past a full refill, so an idle bucket cleans itself up in Redis rather
 # than accumulating forever.
-_TOKEN_BUCKET_LUA = """
+_RATE_LIMIT_SCRIPT = """
 local capacity = tonumber(ARGV[1])
 local refill_rate = tonumber(ARGV[2])
 local now = tonumber(ARGV[3])
@@ -102,7 +102,7 @@ class RedisTokenBucketLimiter:
         self, key: str, *, capacity: int, refill_per_second: float, cost: float = 1.0
     ) -> RateLimitResult:
         allowed, retry_after = await self._client.eval(
-            _TOKEN_BUCKET_LUA,
+            _RATE_LIMIT_SCRIPT,
             1,
             f"ratelimit:{key}",
             capacity,
