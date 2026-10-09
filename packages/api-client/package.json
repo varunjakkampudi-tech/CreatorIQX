@@ -1,0 +1,22 @@
+{
+  "name": "@creatoriqx/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed API client generated from packages/api-client/openapi.json (P0-081). openapi-typescript turns the OpenAPI document into TypeScript types; the generator and its version are recorded here, per spec section 11 (\"generator verified and recorded\").",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "openapi-typescript openapi.json -o src/schema.d.ts",
+    "generate:check": "node scripts/check-schema-drift.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "6.0.3"
+  }
+}

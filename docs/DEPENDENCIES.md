@@ -38,7 +38,12 @@ Every dependency is checked for its latest stable version **at install time** (s
 | @eslint/js, typescript-eslint | 10.0.1, 8.71.1 | 2026-10-09 | apps/web dev | Recommended rule sets for the flat config |
 | @next/eslint-plugin-next | 16.4.0 | 2026-10-09 | apps/web dev | Next's own lint rules, added directly to the flat config (no `eslint-config-next` compat wrapper needed) |
 
-CI-only (not in any `package.json`, fetched by `npx` the way `docs.yml` already fetches `@mermaid-js/mermaid-cli`): `playwright@1.64.0` (light/dark screenshot evidence for P0-080; Playwright becomes a real devDependency in P0-083 when the Playwright+axe harness is built), `wait-on@9` (waits for `next start` before screenshotting).
+A light/dark screenshot step for P0-080 was attempted with `npx playwright@1.64.0` and `npx wait-on@9` (the way `docs.yml` fetches `@mermaid-js/mermaid-cli`), but a backgrounded `next start` process hung the CI step past its timeout; it was dropped rather than kept flaky (see `docs/PROGRESS.md`). Playwright becomes a real devDependency in P0-083, where the Playwright+axe harness needs a reliable browser automation setup anyway.
+
+| openapi-typescript | 7.13.0 | 2026-10-09 | packages/api-client dev | Generates `src/schema.d.ts` from `openapi.json` (P0-081) |
+| openapi-fetch | 0.17.0 | 2026-10-09 | packages/api-client, apps/web | Typed fetch client over the generated schema |
+| openapi-react-query | 0.5.4 | 2026-10-09 | apps/web | TanStack Query hooks (`$api.useQuery(...)`) typed from the same schema; peer range requires `openapi-fetch ^0.17.0` and `@tanstack/react-query ^5.80.0`, both satisfied |
+| @tanstack/react-query | 5.104.1 | 2026-10-09 | apps/web | Query provider and hooks (P0-081) |
 
 ## Python packages (dev group, root `pyproject.toml`)
 

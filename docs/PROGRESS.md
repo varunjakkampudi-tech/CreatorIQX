@@ -7,10 +7,10 @@ Read this file at the start of every session. Update it at the end of every sess
 | Last updated | 2026-10-09 (session 2, Linux sandbox) |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation, implementation in progress** (plan approved by owner 2026-10-08) |
-| Last PASS ticket | **P0-080** — E9 Frontend foundation, Next.js app shell and design tokens (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-020, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-053, P0-054, P0-100) |
+| Last PASS ticket | **P0-081** — E9 Frontend foundation, generated API client and TanStack Query provider (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-020, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-053, P0-054, P0-080, P0-100) |
 | Open BLOCKED items | P0-052 (real Google login, owner action). P0-090 (wireframe approval, owner action) |
-| Build environment | Session 1: owner's Windows 11 machine (Claude Desktop Commander), no longer reachable. Session 2: Linux sandbox, clone at `/home/claude/creatoriqx`. PyPI and files.pythonhosted.org return proxy 403 there (egress policy); the npm registry returns a DNS failure there too (same effective restriction). No Python or JS package install runs locally. **GitHub Actions is the verification environment**: gates are run by pushing and reading the result. Actions log blobs and artifact blobs are also unreachable from the sandbox, so a temporary workflow posted gate output (and, for P0-080, the resolved `pnpm-lock.yaml` itself, in ordered parts) as pull request comments; it is deleted once the real ticket is green. `WebFetch`/`WebSearch` can reach the npm registry even though the sandbox shell cannot, so current dependency versions are still checked against the registry before pinning them |
-| Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works. **main is current.** PRs #1 (P0-053), #2 (P0-054, retargeted to `main` after a gap was found and fixed in #4), #3 (P0-050 backlog-sync), and #4 (P0-054's actual code, which PR #2's merge had missed) are all merged. **PR #5 (P0-080) is green and waits for the owner to merge** |
+| Build environment | Session 1: owner's Windows 11 machine (Claude Desktop Commander), no longer reachable. Session 2: Linux sandbox, clone at `/home/claude/creatoriqx`. PyPI and files.pythonhosted.org return proxy 403 there (egress policy); the npm registry returns a DNS failure there too (same effective restriction). No Python or JS package install runs locally. **GitHub Actions is the verification environment**: gates are run by pushing and reading the result. Actions log blobs and artifact blobs are also unreachable from the sandbox, so a temporary workflow posted gate output (and, for P0-080/P0-081, the resolved `pnpm-lock.yaml` and generated `schema.d.ts`, in ordered parts) as pull request comments; it is deleted once the real ticket is green. `WebFetch`/`WebSearch` can reach the npm registry even though the sandbox shell cannot, so current dependency versions are still checked against the registry before pinning them |
+| Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works. **main is current.** PRs #1 (P0-053), #2 (P0-054, retargeted to `main` after a gap was found and fixed in #4), #3 (P0-050 backlog-sync), #4 (P0-054's actual code), and #5 (P0-080) are all merged. **PR #6 (P0-081) is green and was merged directly by Claude (squash), per the owner's instruction to stop waiting for manual PR merges** |
 
 ## Ticket log
 
@@ -42,6 +42,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-053 | PASS | CI runs 37900856733 (ci-python) and 37900856717 (docs) green. 196 tests, 92.36% total coverage, domain and application at or above 85%. `workspaces` built as the reference hexagonal module; migration 0005 (forced RLS on `workspaces`); first login creates user, personal workspace and owner membership in one transaction with an advisory lock per Google subject and no BYPASSRLS path; audit `user.created`, `workspace.created`, `auth.login_succeeded`; one `workspace.created` outbox event; repeat login idempotent. 6 Postgres integration tests incl. five concurrent first logins creating exactly one workspace. ADR 0011 |
 | P0-051 | PASS | Redis server-side sessions (opaque 256-bit id); `__Host-` Secure HttpOnly SameSite=Lax cookies; rotation on login; idle (60 min) and absolute (12 h) timeouts; CSRF on unsafe methods; single-use login flow via atomic GETDEL. 170 tests incl. Redis integration; ADR 0010; SECURITY.md session controls; ARCHITECTURE.md sign-in and request flow diagrams |
 | P0-080 | PASS | `apps/web`: Next.js 16.4.0 App Router, TS strict (typescript 6.0.3, the newest version typescript-eslint 8.71.1 accepts). Tailwind v4 CSS-first design tokens in `globals.css` (color, 8px grid, type scale, radius, motion) for light and dark. shadcn/ui-style init (`components.json`, `cn()`), lucide-react. `/api` rewrite to the local backend. ESLint rule forbids a raw hex literal anywhere in `src/**/*.ts(x)`. Root page is a tokens showcase, not a named screen (P0-090 untouched). CI green on commit `8c67136` (`ci-js`, `ci-python`, `docs`). `pnpm-lock.yaml` resolved via a temporary gate-report workflow and committed. A live screenshot-capture step for the "light and dark render" check proved too unreliable in this sandbox+CI combination (hung past a 15-minute timeout, then failed under a 5-minute step cap) and was dropped; light/dark rendering is evidenced by the committed token CSS plus the lint rule instead, and stays visually checkable by the owner via `pnpm dev` |
+| P0-081 | PASS | `packages/api-client`: openapi-typescript 7.13.0 generates `src/schema.d.ts` from `openapi.json`; `generate:check` regenerates to a temp file and fails on drift. `apps/web/src/lib/api.ts` wires openapi-fetch + openapi-react-query into a typed `useCurrentUser()` calling `GET /api/v1/me`; `providers.tsx` adds a `QueryClientProvider`. CI green on commit `dee346d` (`ci-js`, `ci-python`, `docs`). Real generated `schema.d.ts` and resolved `pnpm-lock.yaml` fetched from the temporary gate-report workflow the same way P0-080 did, then committed; that workflow deleted once green without it |
 
 ## Owner actions pending
 
@@ -76,15 +77,17 @@ Read this file at the start of every session. Update it at the end of every sess
 | 2026-10-09 | PR #2 (P0-054) merged into the `wip/p0-053-workspace-bootstrap` branch, not `main` - its merge landed a few seconds after PR #1 had already merged that branch into `main`, so the base it targeted was already stale. GitHub reports PR #2 as merged either way, which is misleading: `main` was missing P0-054's actual code until PR #4 (a rebase of the same reviewed commits onto current `main`) closed the gap. Found while compiling a progress update, by checking `git merge-base --is-ancestor` rather than trusting the PR's `merged` flag alone | Defect found while verifying the "all PRs are merged" state |
 | 2026-10-09 | `corepack enable` triggers a fresh pnpm binary download, which makes pnpm 12.x write a second `packageManagerDependencies` self-management document into `pnpm-lock.yaml`. This turned out to be pnpm's normal behavior (the already-committed lockfile on `main` has the same two-document structure) rather than something to avoid; `ci-js.yml`/the gate-report workflow still switched to `pnpm/action-setup` to match `ci-python.yml` and avoid a redundant download, but the multi-document lockfile itself is expected and valid (parse it with `yaml.safe_load_all`, not `safe_load`) | Defect investigated (and partly reversed) while building P0-080 |
 | 2026-10-09 | A backgrounded `next start` process in CI keeps a step's stdout pipe open even after killing the captured PID (Turbopack appears to spawn worker processes the simple `$!` PID doesn't cover), hanging the step until its timeout. `setsid` plus redirected output plus killing the whole process group (`kill -- "-$pid"`) is the fix, but the live screenshot check was still dropped from the blocking `ci-js` gate as not worth the fragility for supplementary evidence | Defect found while building P0-080 |
+| 2026-10-09 | Owner: "I feel you can directly work on main branch right. instead of waiting for PR for merge." Applied as: still open a short-lived branch and PR (the sandbox has no local way to run the JS/Python gates, so a PR is still the only verification mechanism), but merge it myself as soon as every check is green rather than waiting for the owner to click merge. First tested on PR #6 (P0-081) | Owner |
+| 2026-10-09 | `node_modules/.bin/openapi-typescript` is a POSIX shell shim, not JS; `check-schema-drift.mjs` had been invoking it as `node <shim>`, which fails parsing the shim as JavaScript. Fixed by exec'ing the shim directly so its own shebang picks the interpreter | Defect found by a real CI failure while building P0-081 |
+| 2026-10-09 | The openapi-typescript-generated `schema.d.ts` is excluded from Prettier (`.prettierignore`, alongside `openapi.json`): a different installed Prettier version reformats its long union types differently than the version that produced the committed file, so running Prettier on it fights `generate:check`'s byte-for-byte drift comparison instead of agreeing with it | Decision, P0-081 |
+| 2026-10-09 | The gate-report workflow's combined `run:` step aborted after its first failing gate and hid every later gate's output, because GitHub Actions' default bash shell runs with `-e` and a `(cmd; echo exit=$?)` subshell still aborts on `cmd`'s failure under inherited `-e`. Fixed with an explicit `set +e`. Also found: byte-based `split -b` had cut one `pnpm-lock.yaml` chunk between a line's leading spaces and its content; the file-reconstruction script now strips only the trailing fence text from the last line instead of discarding the whole line when it is not an exact `` ``` `` match | Defect found while building P0-081 |
 
 ## Exact next step
 
-**First: the owner merges PR #5 (P0-080) into `main`.** Green on commit `8c67136`
-(`ci-js`, `ci-python`, `docs`).
+PR #6 (P0-081) was merged directly (squash) once every check was green, per the
+owner's standing instruction to stop waiting for a manual PR merge. Continue in
+backlog order:
 
-Then, in backlog order:
-
-- **P0-081** generated API client, TanStack Query provider (depends on P0-033, P0-080).
 - **P0-082** CSP with per-request nonces, next-intl (depends on P0-080).
 - **P0-083** Storybook, Button/Input/Card/Skeleton primitives, Playwright+axe harness
   (depends on P0-080). This is also the right place to revisit the P0-080 screenshot
@@ -119,7 +122,13 @@ the full resolved `pnpm-lock.yaml`, not just a diff - a diff can be truncated fr
 wrong end and become unreconstructable), split the file and post it as several ordered,
 labelled comments, then fetch each with `gh api repos/<owner>/<repo>/issues/comments/<id>`
 and concatenate by stripping the known header/fence text, not by assuming line-oriented
-boundaries (a byte-based `split` can cut mid-line). `WebFetch`/`WebSearch` can reach
+boundaries. A byte-based `split -b` can and did cut mid-line (P0-081): when a chunk's
+last line is not an exact `` ``` `` match, only the trailing fence text was stripped,
+keeping the leading content that split had left glued to the closing fence, rather than
+discarding the whole line. Give any multi-command report step an explicit `set +e`:
+Actions runs `run:` blocks under `bash -e`, and even a `(cmd; echo exit=$?)` subshell
+aborts the whole step on `cmd`'s failure without it, hiding every later command's output
+(found in P0-081). `WebFetch`/`WebSearch` can reach
 registries (npm, PyPI) that the sandbox shell cannot, which is enough to verify current
 dependency versions before pinning them without needing the install itself to succeed
 locally.

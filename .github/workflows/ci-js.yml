@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   web:
-    name: Lint, types, build (apps/web)
+    name: Lint, types, build (apps/web, packages/api-client)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -32,6 +32,12 @@ jobs:
 
       - name: Format check (root Prettier, every workspace)
         run: pnpm run format:check
+
+      - name: Generated API client matches openapi.json (P0-081)
+        run: pnpm --filter @creatoriqx/api-client run generate:check
+
+      - name: Typecheck (packages/api-client)
+        run: pnpm --filter @creatoriqx/api-client run typecheck
 
       - name: Lint (apps/web)
         run: pnpm --filter @creatoriqx/web run lint
