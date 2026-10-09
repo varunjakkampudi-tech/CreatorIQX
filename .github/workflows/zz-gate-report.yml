@@ -1,0 +1,52 @@
+name: zz-gate-report
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Install (capture output, resolve lockfile)
+        id: install
+        continue-on-error: true
+        run: |
+          set +e
+          pnpm install --no-frozen-lockfile > /tmp/install.log 2>&1
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          tail -c 55000 /tmp/install.log > /tmp/install.tail.log
+
+      - name: Post install output as PR comment
+        if: always()
+        run: |
+          set +e
+          {
+            echo "### zz-gate-report: pnpm install (exit ${{ steps.install.outputs.exit }})"
+            echo '```'
+            cat /tmp/install.tail.log
+            echo '```'
+          } > /tmp/comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Upload resolved lockfile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zz-pnpm-lock
+          path: pnpm-lock.yaml
+          retention-days: 7
