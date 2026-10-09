@@ -35,11 +35,13 @@ def _task_queue_broker_url() -> str:
 
 @pytest.fixture
 def celery_app() -> Iterator[object]:
+    # celery.contrib.testing.tasks defines the "celery.ping" shared task that
+    # start_worker()'s default ping check looks for (`assert 'celery.ping' in
+    # app.tasks`). It is not one of Celery's normal builtin tasks, so it is
+    # only registered once this module has been imported.
+    import celery.contrib.testing.tasks  # noqa: F401
+
     app = create_celery_app(broker_url=_task_queue_broker_url())
-    # finalize() registers Celery's own builtin tasks (celery.ping, etc.) on
-    # this app. start_worker()'s default ping check asserts `celery.ping in
-    # app.tasks`, which otherwise never gets added since this app is built
-    # directly rather than through the normal app-loading path.
     app.finalize()
     # Importing tasks.py registers ops.ping/ops.flaky on *this* app instance
     # too (Celery tasks can be bound to more than one app); the module-level
@@ -57,7 +59,7 @@ def celery_app() -> Iterator[object]:
 
 
 def test_enqueue_via_port_job_completes_result_observed(celery_app: object) -> None:
-    queue = CeleryTaskQueue(app=celery_app)  # type: ignore[arg-type]
+    queue = CeleryTaskQueue(app=celery_app)
     correlation_id = str(uuid.uuid4())
     handle = queue.enqueue(
         JobRequest(name="ops.ping", payload={"hello": "world"}, correlation_id=correlation_id)
@@ -75,7 +77,7 @@ def test_enqueue_via_port_job_completes_result_observed(celery_app: object) -> N
 
 
 def test_failing_job_retries_then_lands_in_failed_state(celery_app: object) -> None:
-    queue = CeleryTaskQueue(app=celery_app)  # type: ignore[arg-type]
+    queue = CeleryTaskQueue(app=celery_app)
     handle = queue.enqueue(JobRequest(name="ops.flaky"))
 
     async_result = celery_app.AsyncResult(handle.job_id)  # type: ignore[attr-defined]
