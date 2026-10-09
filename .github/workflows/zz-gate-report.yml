@@ -35,6 +35,11 @@ jobs:
         working-directory: apps/web
         run: pnpm run depcruise > /tmp/depcruise.log 2>&1; echo "exit=$?" >> "$GITHUB_OUTPUT"
 
+      - name: format:check diff (capture output)
+        id: fmt
+        continue-on-error: true
+        run: pnpm run format:check > /tmp/fmt.log 2>&1; echo "exit=$?" >> "$GITHUB_OUTPUT"
+
       - name: Split resolved lockfile into PR-comment-sized chunks
         if: always()
         run: |
@@ -55,6 +60,10 @@ jobs:
             echo "### depcruise (exit ${{ steps.depcruise.outputs.exit }})"
             echo '```'
             tail -c 15000 /tmp/depcruise.log
+            echo '```'
+            echo "### format:check (exit ${{ steps.fmt.outputs.exit }})"
+            echo '```'
+            tail -c 15000 /tmp/fmt.log
             echo '```'
           } > /tmp/comment.md
           gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
