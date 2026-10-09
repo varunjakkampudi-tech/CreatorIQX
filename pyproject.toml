@@ -75,6 +75,20 @@ files = ["apps/api/src", "apps/api/tests", "apps/worker/src", "apps/worker/tests
 warn_unreachable = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 
+# Celery ships no py.typed marker and no official stubs (ADR 0003). Rather
+# than add and maintain a third-party stub package for Phase 0's one job,
+# treat it as untyped at the boundary: ignore_missing_imports silences the
+# import-untyped errors, and the one module that decorates with
+# `@celery_app.task` is exempted from disallow_untyped_decorators, since an
+# Any-typed decorator always trips that check under strict mode.
+[[tool.mypy.overrides]]
+module = ["celery.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["creatoriqx_api.modules.jobs.infrastructure.tasks"]
+disallow_untyped_decorators = false
+
 # --- pytest and coverage (spec §12: 85% domain and application, 70% overall) ------
 [tool.pytest.ini_options]
 testpaths = ["apps/api/tests", "apps/worker/tests", "tests"]

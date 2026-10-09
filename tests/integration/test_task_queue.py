@@ -36,6 +36,11 @@ def _task_queue_broker_url() -> str:
 @pytest.fixture
 def celery_app() -> Iterator[object]:
     app = create_celery_app(broker_url=_task_queue_broker_url())
+    # finalize() registers Celery's own builtin tasks (celery.ping, etc.) on
+    # this app. start_worker()'s default ping check asserts `celery.ping in
+    # app.tasks`, which otherwise never gets added since this app is built
+    # directly rather than through the normal app-loading path.
+    app.finalize()
     # Importing tasks.py registers ops.ping/ops.flaky on *this* app instance
     # too (Celery tasks can be bound to more than one app); the module-level
     # `celery_app` singleton stays untouched for production use.
@@ -44,12 +49,9 @@ def celery_app() -> Iterator[object]:
     app.register_task(tasks_module.ops_ping)
     app.register_task(tasks_module.ops_flaky)
     app.conf.update(result_expires=60)
-    # perform_ping_check (default True) blocks start_worker() until the
-    # embedded worker has actually started consuming, over the broker's
-    # control/pidbox channel. Skipping it let the test send a task before
-    # the worker was listening, so the job sat unacked until the client gave
-    # up waiting on the result (visible as "Restoring unacknowledged
-    # message(s)" at teardown).
+    # The default ping check now blocks start_worker() until the embedded
+    # worker has actually started consuming, so the test never sends a task
+    # before the worker is listening for one.
     with start_worker(app, pool="solo", shutdown_timeout=30):
         yield app
 
