@@ -88,19 +88,38 @@ jobs:
           exit $status
 
       - name: Apply migrations (owner role)
-        run: uv run python scripts/dev.py migrate
+        run: |
+          set +e
+          uv run python scripts/dev.py migrate > /tmp/migrate.log 2>&1
+          status=$?
+          tail -c 30000 /tmp/migrate.log
+          exit $status
 
       - name: Seed the second demo workspace
-        run: uv run python scripts/dev.py seed
+        run: |
+          set +e
+          uv run python scripts/dev.py seed > /tmp/seed.log 2>&1
+          status=$?
+          tail -c 30000 /tmp/seed.log
+          exit $status
 
       - name: Smoke-check every service answers
         run: |
-          curl -fsS http://127.0.0.1:58000/healthz
-          curl -fsS http://127.0.0.1:58000/readyz
-          curl -fsS http://127.0.0.1:3000/ | head -c 200
-          docker compose -f infra/compose/docker-compose.yml --profile full \
-            exec -T worker celery -A \
-            creatoriqx_api.modules.jobs.infrastructure.celery_app.celery_app inspect ping
+          set +e
+          {
+            curl -fsS http://127.0.0.1:58000/healthz
+            echo
+            curl -fsS http://127.0.0.1:58000/readyz
+            echo
+            curl -fsS http://127.0.0.1:3000/ | head -c 200
+            echo
+            docker compose -f infra/compose/docker-compose.yml --profile full \
+              exec -T worker celery -A \
+              creatoriqx_api.modules.jobs.infrastructure.celery_app.celery_app inspect ping
+          } > /tmp/smoke.log 2>&1
+          status=$?
+          tail -c 30000 /tmp/smoke.log
+          exit $status
 
       - name: Compose logs (always, for diagnosis)
         if: always()
@@ -114,14 +133,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           {
-            echo "### full-stack up log tail"
-            echo '```'
-            tail -c 30000 /tmp/up.log 2>/dev/null
-            echo '```'
-            echo "### compose logs tail"
-            echo '```'
-            tail -c 30000 /tmp/compose.log 2>/dev/null
-            echo '```'
+            for f in up migrate seed smoke compose; do
+              echo "### $f log tail"
+              echo '```'
+              tail -c 10000 "/tmp/$f.log" 2>/dev/null
+              echo '```'
+            done
           } > /tmp/report.md
           gh pr comment ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
