@@ -29,6 +29,11 @@ async def redis_client() -> AsyncIterator[Redis]:
     if not url:
         pytest.fail(".env is missing REDIS_URL. Run: py scripts/dev.py setup")
     client = Redis.from_url(url)
+    # Force the connection open now, not during the first timed check below:
+    # an async Redis client's first real command pays TCP/handshake setup
+    # cost, which is otherwise wall-clock time that leaks into the very
+    # "back-to-back" window the bucket-math assertions depend on being short.
+    await client.ping()
     yield client
     await client.aclose()
 
@@ -37,15 +42,18 @@ async def test_lua_script_allows_then_blocks_then_refills(redis_client: Redis) -
     limiter = RedisTokenBucketLimiter(redis_client)
     key = f"test:p0-055:{uuid.uuid4()}"
 
-    first = await limiter.check(key, capacity=1, refill_per_second=50.0)
+    # A slow refill rate so that two awaited round trips to Redis - which can
+    # themselves take a few milliseconds - can never add up to a whole token
+    # between "first" and "second"; only the explicit sleep below should.
+    first = await limiter.check(key, capacity=1, refill_per_second=1.0)
     assert first.allowed is True
 
-    second = await limiter.check(key, capacity=1, refill_per_second=50.0)
+    second = await limiter.check(key, capacity=1, refill_per_second=1.0)
     assert second.allowed is False
     assert second.retry_after_seconds >= 0
 
-    await asyncio.sleep(0.05)  # 50 tokens/sec: well over one token refilled
-    third = await limiter.check(key, capacity=1, refill_per_second=50.0)
+    await asyncio.sleep(1.1)  # 1 token/sec: comfortably over one token refilled
+    third = await limiter.check(key, capacity=1, refill_per_second=1.0)
     assert third.allowed is True
 
     await redis_client.delete(f"ratelimit:{key}")

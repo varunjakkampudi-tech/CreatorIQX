@@ -33,9 +33,7 @@ class DomainError(Exception):
     title: str = "Request could not be processed"
     code: str = "domain-error"
 
-    def __init__(
-        self, detail: str | None = None, headers: Mapping[str, str] | None = None
-    ) -> None:
+    def __init__(self, detail: str | None = None, headers: Mapping[str, str] | None = None) -> None:
         super().__init__(detail or self.title)
         self.detail = detail
         self.headers = headers
