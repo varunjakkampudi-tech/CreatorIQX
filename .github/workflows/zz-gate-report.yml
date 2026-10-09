@@ -1,9 +1,10 @@
 name: zz-gate-report
 
 # Temporary: this sandbox has no npm registry access, so pnpm-lock.yaml
-# can't be generated locally. This workflow runs the install in a networked
-# environment and posts the result (including the resolved lockfile) as a
-# PR comment, since Actions log blobs are not reachable from here either.
+# for apps/web's new dependencies can only be resolved in a networked CI
+# runner. Posts the resolved lockfile as PR comments (Actions log and
+# artifact blobs are not reachable from here either) in ordered,
+# size-bounded parts, since a single comment is capped at 65536 chars.
 # Deleted before this PR merges.
 
 on:
@@ -28,44 +29,42 @@ jobs:
       - name: Enable corepack
         run: corepack enable
 
-      - name: Install (generates the lockfile) and report
-        id: run
+      - name: Install (generates the lockfile)
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run the gates and keep going even if one fails
         run: |
           {
-            echo "## Gate report for ${{ github.sha }}"
-            echo
-            echo "### pnpm install --no-frozen-lockfile"
+            echo "## Gate results for ${{ github.sha }}"
             echo '```'
-            corepack --version 2>&1 || true
-            node --version
-            pnpm install --no-frozen-lockfile 2>&1 | tail -c 60000
+            (pnpm run format:check 2>&1; echo "format:check exit=$?")
+            (pnpm --filter @creatoriqx/web run lint 2>&1; echo "lint exit=$?")
+            (pnpm --filter @creatoriqx/web run typecheck 2>&1; echo "typecheck exit=$?")
+            (pnpm --filter @creatoriqx/web run build 2>&1; echo "build exit=$?")
             echo '```'
-            echo
-            echo "### Lockfile diff"
-            echo '```diff'
-            git diff -- pnpm-lock.yaml | tail -c 60000
-            echo '```'
-            echo
-            echo "### Lint / typecheck / build (apps/web)"
-            echo '```'
-            (pnpm run format:check 2>&1; echo "format:check exit=$?") | tail -c 20000
-            (pnpm --filter @creatoriqx/web run lint 2>&1; echo "lint exit=$?") | tail -c 20000
-            (pnpm --filter @creatoriqx/web run typecheck 2>&1; echo "typecheck exit=$?") | tail -c 20000
-            (pnpm --filter @creatoriqx/web run build 2>&1; echo "build exit=$?") | tail -c 20000
-            echo '```'
-          } > "$RUNNER_TEMP/report.md"
-          wc -c "$RUNNER_TEMP/report.md"
+          } > "$RUNNER_TEMP/gates.md"
 
-      - name: Post report as a PR comment
+      - name: Post the gate results as a PR comment
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/report.md"
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/gates.md"
 
-      - name: Upload the resolved lockfile
+      - name: Post the resolved lockfile in ordered parts
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pnpm-lock
-          path: pnpm-lock.yaml
-          retention-days: 7
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          split -b 60000 -d -a 3 pnpm-lock.yaml "$RUNNER_TEMP/lockpart."
+          total=$(ls "$RUNNER_TEMP"/lockpart.* | wc -l)
+          i=0
+          for part in $(ls "$RUNNER_TEMP"/lockpart.* | sort); do
+            {
+              echo "## pnpm-lock.yaml PART $i of $total (0-indexed) for ${{ github.sha }}"
+              echo '```yaml'
+              cat "$part"
+              echo '```'
+            } > "$RUNNER_TEMP/lockcomment.md"
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/lockcomment.md"
+            i=$((i + 1))
+          done
