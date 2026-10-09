@@ -56,7 +56,8 @@ WORKDIR /app
 # The node:*-slim image already ships a non-root "node" user/group.
 COPY --from=builder --chown=node:node /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=builder --chown=node:node /app/apps/web/public ./apps/web/public
+# apps/web has no public/ directory yet (no screens exist before P0-090's
+# wireframe approval, spec section 11) - add this COPY back once one does.
 
 USER node
 EXPOSE 3000

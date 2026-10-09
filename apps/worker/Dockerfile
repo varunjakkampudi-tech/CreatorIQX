@@ -28,18 +28,18 @@ ENV UV_PYTHON_DOWNLOADS=0 \
 
 WORKDIR /app
 
-# Dependencies-only layer: cached on the lockfile, invalidated only when a
-# dependency actually changes, not on every source edit.
+# Dependencies-only layer, cached on the lockfile. Unlike apps/api/Dockerfile,
+# this still needs apps/api/src: creatoriqx-worker depends on creatoriqx-api
+# (a real workspace dependency, not just the --no-install-project target), so
+# uv must be able to build it even in this "dependencies" sync.
 COPY pyproject.toml uv.lock ./
 COPY apps/api/pyproject.toml apps/api/pyproject.toml
+COPY apps/api/src apps/api/src
 COPY apps/worker/pyproject.toml apps/worker/pyproject.toml
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --no-editable --package creatoriqx-worker
 
-# Now the real source for both packages (creatoriqx-worker depends on
-# creatoriqx-api, so the task definitions it dispatches must be importable
-# too), then re-sync to install the projects themselves.
-COPY apps/api/src apps/api/src
+# Now the real worker source, then re-sync to install creatoriqx-worker itself.
 COPY apps/worker apps/worker
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable --package creatoriqx-worker
