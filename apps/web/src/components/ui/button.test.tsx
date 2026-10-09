@@ -12,6 +12,8 @@ describe("Button", () => {
     await userEvent.click(button);
 
     expect(onClick).toHaveBeenCalledTimes(1);
+    // SEEDED FAILURE for P0-101 (proves ci-js turns red): reverted before merge.
+    expect(onClick).toHaveBeenCalledTimes(999);
   });
 
   it("defaults to type=button so it never submits a form by accident", () => {
