@@ -28,7 +28,7 @@ Every dependency is checked for its latest stable version **at install time** (s
 | next | 16.4.0 | 2026-10-09 | apps/web | App Router framework (P0-080) |
 | react, react-dom | 19.3.0 | 2026-10-09 | apps/web | Peer of Next 16.4 |
 | @types/react, @types/react-dom | 19.3.0 | 2026-10-09 | apps/web dev | Types matching the installed React |
-| typescript | 7.0.2 | 2026-10-09 | apps/web dev | Strict TS for the web app |
+| typescript | 6.0.3 | 2026-10-09 | apps/web dev | Strict TS for the web app. npm's `latest` tag is 7.0.2, but `typescript-eslint@8.71.1`'s peer range is `>=4.8.4 <6.1.0` (confirmed by a real CI failure, not guessed), so 6.0.3 is the newest version both tools accept |
 | @types/node | 26.6.4 | 2026-10-09 | apps/web dev | Types for Next's Node-side code (config, route handlers) |
 | tailwindcss, @tailwindcss/postcss | 4.3.3 | 2026-10-09 | apps/web / apps/web dev | CSS-first design tokens via `@theme` (P0-080); no `tailwind.config.js` needed in v4 |
 | clsx | 2.1.1 | 2026-10-09 | apps/web | Conditional class composition, used by `cn()` |
