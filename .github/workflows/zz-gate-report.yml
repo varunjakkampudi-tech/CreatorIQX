@@ -50,6 +50,34 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/gates.md"
 
+      - name: Screenshot the tokens page in light and dark (P0-080 evidence)
+        working-directory: apps/web
+        timeout-minutes: 5
+        run: |
+          npx --yes playwright@1.64.0 install --with-deps chromium
+          # Redirected and setsid'd so the server (and any worker
+          # processes it spawns) does not hold the step's stdout pipe
+          # open - an earlier attempt without this hung the whole job
+          # until its timeout.
+          setsid pnpm run start -- --port 3100 > server.log 2>&1 < /dev/null &
+          server_pid=$!
+          npx --yes wait-on@9 http://127.0.0.1:3100
+          npx --yes playwright@1.64.0 screenshot --color-scheme=light --full-page \
+            http://127.0.0.1:3100 ../../light.png
+          npx --yes playwright@1.64.0 screenshot --color-scheme=dark --full-page \
+            http://127.0.0.1:3100 ../../dark.png
+          kill -- "-$server_pid" || true
+
+      - name: Upload light/dark screenshots (P0-080 evidence)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tokens-screenshots
+          path: |
+            light.png
+            dark.png
+          retention-days: 30
+
       - name: Post the resolved lockfile in ordered parts
         if: always()
         env:

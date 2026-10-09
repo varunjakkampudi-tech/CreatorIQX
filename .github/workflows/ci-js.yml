@@ -42,28 +42,6 @@ jobs:
       - name: Build (apps/web)
         run: pnpm --filter @creatoriqx/web run build
 
-      - name: Screenshot the tokens page in light and dark (P0-080 evidence)
-        working-directory: apps/web
-        run: |
-          npx --yes playwright@1.64.0 install --with-deps chromium
-          pnpm run start -- --port 3100 &
-          server_pid=$!
-          npx --yes wait-on@9 http://127.0.0.1:3100
-          npx --yes playwright@1.64.0 screenshot --color-scheme=light --full-page \
-            http://127.0.0.1:3100 ../../light.png
-          npx --yes playwright@1.64.0 screenshot --color-scheme=dark --full-page \
-            http://127.0.0.1:3100 ../../dark.png
-          kill "$server_pid"
-
-      - name: Upload light/dark screenshots (P0-080 evidence)
-        uses: actions/upload-artifact@v4
-        with:
-          name: tokens-screenshots
-          path: |
-            light.png
-            dark.png
-          retention-days: 30
-
       - name: Upload the resolved lockfile (so it can be committed if it drifted)
         uses: actions/upload-artifact@v4
         with:
