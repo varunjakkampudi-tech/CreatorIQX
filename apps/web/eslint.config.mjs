@@ -38,11 +38,20 @@ export default tseslint.config(
     ...noRawHexInComponents,
   },
   {
+    // Test fixtures (*.test.tsx) and Storybook stories (*.stories.tsx)
+    // aren't product copy - a test's "Save" button label or a story's
+    // demo text needs no translation key.
     files: ["src/**/*.tsx"],
+    ignores: ["**/*.test.tsx", "**/*.stories.tsx"],
     plugins: { local: noRawJsxText },
     rules: { "local/no-raw-jsx-text": "error" },
   },
   {
-    ignores: [".next/**", "node_modules/**", "next-env.d.ts"],
+    ignores: [
+      ".next/**",
+      "node_modules/**",
+      "next-env.d.ts",
+      "storybook-static/**",
+    ],
   },
 );

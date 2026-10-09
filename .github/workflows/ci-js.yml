@@ -56,6 +56,18 @@ jobs:
         working-directory: apps/web
         run: pnpm run test:e2e
 
+      - name: Unit tests - UI primitives (apps/web, P0-083)
+        working-directory: apps/web
+        run: pnpm run test
+
+      - name: Build Storybook (apps/web, P0-083)
+        working-directory: apps/web
+        run: pnpm run build-storybook
+
+      - name: Accessibility - axe scan of every story (apps/web, P0-083)
+        working-directory: apps/web
+        run: pnpm run test:a11y
+
       - name: Upload the resolved lockfile (so it can be committed if it drifted)
         uses: actions/upload-artifact@v4
         with:
