@@ -92,3 +92,6 @@ change), use `up` + `api` instead of `up-full` - see Developer tasks above.
 ## License
 
 Proprietary. All rights reserved (to be confirmed by the owner).
+
+<!-- Seeded fake secret for P0-102 CI verification; reverted before merge. -->
+<!-- gitleaks should flag this fake GitHub PAT: ghp_s0CwWpLgDV9rvTZos5EebLLKlPwV6T22AUaD -->
