@@ -44,7 +44,13 @@ def celery_app() -> Iterator[object]:
     app.register_task(tasks_module.ops_ping)
     app.register_task(tasks_module.ops_flaky)
     app.conf.update(result_expires=60)
-    with start_worker(app, perform_ping_check=False, shutdown_timeout=30):
+    # perform_ping_check (default True) blocks start_worker() until the
+    # embedded worker has actually started consuming, over the broker's
+    # control/pidbox channel. Skipping it let the test send a task before
+    # the worker was listening, so the job sat unacked until the client gave
+    # up waiting on the result (visible as "Restoring unacknowledged
+    # message(s)" at teardown).
+    with start_worker(app, pool="solo", shutdown_timeout=30):
         yield app
 
 
