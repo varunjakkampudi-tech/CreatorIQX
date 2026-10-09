@@ -1,0 +1,93 @@
+name: zz-gate-report
+
+# Temporary: this sandbox has no npm registry access, so pnpm-lock.yaml
+# can't be resolved for the new P0-082 dependencies (next-intl,
+# @playwright/test) locally. Posts gate output and the resolved lockfile
+# as PR comments (Actions log and artifact blobs are not reachable from
+# here either). Deleted before this PR merges.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install (generates the lockfile)
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run the gates and keep going even if one fails
+        run: |
+          set +e
+          {
+            echo "## Gate results for ${{ github.sha }}"
+            echo '```'
+            (set +e; pnpm run format:check 2>&1; echo "format:check exit=$?")
+            (set +e; pnpm --filter @creatoriqx/web run lint 2>&1; echo "lint exit=$?")
+            (set +e; pnpm --filter @creatoriqx/web run typecheck 2>&1; echo "typecheck exit=$?")
+            (set +e; pnpm --filter @creatoriqx/web run build 2>&1; echo "build exit=$?")
+            echo '```'
+          } > "$RUNNER_TEMP/gates.md"
+
+      - name: Post the gate results as a PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/gates.md"
+
+      - name: Install Playwright's Chromium and run the e2e test
+        working-directory: apps/web
+        run: |
+          set +e
+          {
+            echo "## E2E (Playwright) for ${{ github.sha }}"
+            echo '```'
+            (set +e; pnpm exec playwright install --with-deps chromium 2>&1; echo "playwright install exit=$?")
+            (set +e; pnpm run test:e2e 2>&1; echo "test:e2e exit=$?")
+            echo '```'
+          } > "$RUNNER_TEMP/e2e.md"
+
+      - name: Post the e2e results as a PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/e2e.md"
+
+      - name: Post the resolved lockfile
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          post_file() {
+            local label="$1" file="$2" lang="$3"
+            split -b 60000 -d -a 3 "$file" "$RUNNER_TEMP/part."
+            total=$(ls "$RUNNER_TEMP"/part.* | wc -l)
+            i=0
+            for part in $(ls "$RUNNER_TEMP"/part.* | sort); do
+              {
+                echo "## $label PART $i of $total (0-indexed) for ${{ github.sha }}"
+                echo "\`\`\`$lang"
+                cat "$part"
+                echo '```'
+              } > "$RUNNER_TEMP/comment.md"
+              gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/comment.md"
+              i=$((i + 1))
+            done
+            rm -f "$RUNNER_TEMP"/part.*
+          }
+          post_file "pnpm-lock.yaml" pnpm-lock.yaml yaml
