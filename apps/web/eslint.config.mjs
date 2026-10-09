@@ -31,6 +31,10 @@ export default tseslint.config(
     rules: {
       ...nextPlugin.configs.recommended.rules,
       ...nextPlugin.configs["core-web-vitals"].rules,
+      // typescript-eslint's "recommended" preset only warns on `any`
+      // (spec section 12: "TypeScript: strict, no `any`" - a warning
+      // doesn't fail `eslint .`, so P0-012 raises it to an error).
+      "@typescript-eslint/no-explicit-any": "error",
     },
   },
   {
