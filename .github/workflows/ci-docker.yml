@@ -64,6 +64,9 @@ jobs:
     name: Full stack boots, migrates and seeds (P0-022)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
 
@@ -76,9 +79,13 @@ jobs:
 
       - name: Start the full profile (postgres, redis, api, worker, web)
         run: |
+          set +e
           cp .env.example .env
           docker compose --env-file .env -f infra/compose/docker-compose.yml \
-            --profile full up --detach --build --wait --wait-timeout 180
+            --profile full up --detach --build --wait --wait-timeout 180 > /tmp/up.log 2>&1
+          status=$?
+          tail -c 50000 /tmp/up.log
+          exit $status
 
       - name: Apply migrations (owner role)
         run: uv run python scripts/dev.py migrate
@@ -97,7 +104,26 @@ jobs:
 
       - name: Compose logs (always, for diagnosis)
         if: always()
-        run: docker compose -f infra/compose/docker-compose.yml --profile full logs --no-color
+        run: docker compose -f infra/compose/docker-compose.yml --profile full logs --no-color > /tmp/compose.log 2>&1 || true
+
+      - name: Post diagnostics to the PR on failure (temporary debug aid, P0-022)
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### full-stack up log tail"
+            echo '```'
+            tail -c 30000 /tmp/up.log 2>/dev/null
+            echo '```'
+            echo "### compose logs tail"
+            echo '```'
+            tail -c 30000 /tmp/compose.log 2>/dev/null
+            echo '```'
+          } > /tmp/report.md
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body-file /tmp/report.md
 
       - name: Tear down
         if: always()
