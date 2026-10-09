@@ -11,6 +11,8 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+import pytest
+
 from creatoriqx_api.modules.jobs.domain.ports import JobHandle, JobRequest
 from creatoriqx_api.modules.jobs.infrastructure.celery_task_queue import CeleryTaskQueue
 
@@ -21,7 +23,7 @@ class _FakeAsyncResult:
 
 
 def test_enqueue_sends_the_named_task_with_payload_and_correlation_id(
-    monkeypatch: Any,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls: list[tuple[str, dict[str, Any]]] = []
 

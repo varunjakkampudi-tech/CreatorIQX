@@ -27,26 +27,37 @@ jobs:
       - uses: astral-sh/setup-uv@v10.2.0
 
       - name: Resolve uv.lock (no --locked)
-        run: uv lock --all-packages
-
-      - name: Chunk uv.lock for PR comments
         run: |
-          split -b 60000 -d -a 3 uv.lock /tmp/uvlock_part_
-          ls -la /tmp/uvlock_part_* | wc -l
+          uv lock > /tmp/uvlock_cmd_out.txt 2>&1
+          echo "exit: $?" >> /tmp/uvlock_cmd_out.txt
+
+      - name: Chunk uv.lock (and command output) for PR comments
+        if: always()
+        run: |
+          split -b 60000 -d -a 3 uv.lock /tmp/uvlock_part_ 2>/dev/null || true
+          split -b 60000 -d -a 3 /tmp/uvlock_cmd_out.txt /tmp/uvlockout_part_ 2>/dev/null || true
+          ls -la /tmp/uvlock_part_* /tmp/uvlockout_part_* 2>/dev/null || true
 
       - name: Post chunks as PR comments
+        if: always()
         uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
-            const files = fs.readdirSync('/tmp').filter(f => f.startsWith('uvlock_part_')).sort();
+            let files = [];
+            try {
+              files = fs.readdirSync('/tmp').filter(
+                f => f.startsWith('uvlock_part_') || f.startsWith('uvlockout_part_')
+              ).sort();
+            } catch (e) {}
             for (const f of files) {
               const content = fs.readFileSync(`/tmp/${f}`, 'utf8');
+              const tag = f.startsWith('uvlockout_part_') ? 'UVLOCKCMD' : 'UVLOCK';
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.payload.pull_request.number,
-                body: `UVLOCK ${f}\n\`\`\`\n${content}\n\`\`\``,
+                body: `${tag} ${f}\n\`\`\`\n${content}\n\`\`\``,
               });
             }
 

@@ -15,6 +15,7 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
+from celery import Task
 
 from creatoriqx_api.modules.jobs.infrastructure.celery_app import celery_app
 
@@ -42,7 +43,7 @@ def ops_ping(
     retry_jitter=True,
 )
 def ops_flaky(
-    self: Any, payload: dict[str, Any] | None = None, correlation_id: str | None = None
+    self: Task, payload: dict[str, Any] | None = None, correlation_id: str | None = None
 ) -> None:
     """Always fail, to prove retries-with-backoff-then-failed (P0-060 acceptance test).
 

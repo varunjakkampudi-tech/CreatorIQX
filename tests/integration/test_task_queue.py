@@ -71,7 +71,7 @@ def test_failing_job_retries_then_lands_in_failed_state(celery_app: object) -> N
     handle = queue.enqueue(JobRequest(name="ops.flaky"))
 
     async_result = celery_app.AsyncResult(handle.job_id)  # type: ignore[attr-defined]
-    with pytest.raises(RuntimeError, match="ops.flaky always fails, by design"):
+    with pytest.raises(RuntimeError, match=re.escape("ops.flaky always fails, by design")):
         async_result.get(timeout=30)
 
     assert async_result.state == "FAILURE"
