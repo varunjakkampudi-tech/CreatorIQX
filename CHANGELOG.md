@@ -6,6 +6,11 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ### Added
 
+- `apps/web` (P0-012): TS/JS quality gates - `@typescript-eslint/no-explicit-any`
+  raised to `error` (the recommended preset only warns), and dependency-cruiser
+  (`.dependency-cruiser.cjs`) enforcing no import cycles and that the shared
+  design-system primitives (`src/components/ui`) never import from `src/app`.
+  Both proven to actually fail CI on a seeded violation, then reverted.
 - `apps/web` (P0-083): a design-system skeleton - Button, Input, Card and Skeleton
   primitives under `src/components/ui`, styled only with the existing design tokens,
   each with a Vitest + Testing Library unit test; Storybook 10 with a story per

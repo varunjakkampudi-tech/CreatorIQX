@@ -45,6 +45,10 @@ jobs:
       - name: Typecheck (apps/web)
         run: pnpm --filter @creatoriqx/web run typecheck
 
+      - name: Module boundaries (apps/web, P0-012)
+        working-directory: apps/web
+        run: pnpm run depcruise
+
       - name: Build (apps/web)
         run: pnpm --filter @creatoriqx/web run build
 

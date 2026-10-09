@@ -7,10 +7,10 @@ Read this file at the start of every session. Update it at the end of every sess
 | Last updated | 2026-10-09 (session 2, Linux sandbox) |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
 | Current phase | **Phase 0: Foundation, implementation in progress** (plan approved by owner 2026-10-08) |
-| Last PASS ticket | **P0-083** — E9 Frontend foundation, Storybook/design-system skeleton with Vitest + axe a11y harness (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-020, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-053, P0-054, P0-080, P0-081, P0-082, P0-100) |
+| Last PASS ticket | **P0-012** — E2 Repository and tooling, TS/JS quality gates (no-explicit-any error, dependency-cruiser) (also PASS: P0-001 to P0-007, P0-010, P0-011, P0-013, P0-020, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-053, P0-054, P0-080, P0-081, P0-082, P0-083, P0-100) |
 | Open BLOCKED items | P0-052 (real Google login, owner action). P0-090 (wireframe approval, owner action) |
 | Build environment | Session 1: owner's Windows 11 machine (Claude Desktop Commander), no longer reachable. Session 2: Linux sandbox, clone at `/home/claude/creatoriqx`. PyPI and files.pythonhosted.org return proxy 403 there (egress policy); the npm registry returns a DNS failure there too (same effective restriction). No Python or JS package install runs locally. **GitHub Actions is the verification environment**: gates are run by pushing and reading the result. Actions log blobs and artifact blobs are also unreachable from the sandbox, so a temporary workflow posted gate output (and the resolved `pnpm-lock.yaml`, and for P0-081 the generated `schema.d.ts`, in ordered parts) as pull request comments; it is deleted once the real ticket is green. `WebFetch`/`WebSearch` can reach the npm registry even though the sandbox shell cannot, so current dependency versions are still checked against the registry before pinning them |
-| Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works. **main is current.** PRs #1 (P0-053), #2 (P0-054, retargeted to `main` after a gap was found and fixed in #4), #3 (P0-050 backlog-sync), #4 (P0-054's actual code), #5 (P0-080), #6 (P0-081), and #7 (P0-082) are all merged. **PR #8 (P0-083) is green and was merged directly by Claude (squash), per the owner's instruction to stop waiting for manual PR merges** |
+| Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works. **main is current.** PRs #1 (P0-053), #2 (P0-054, retargeted to `main` after a gap was found and fixed in #4), #3 (P0-050 backlog-sync), #4 (P0-054's actual code), #5 (P0-080), #6 (P0-081), #7 (P0-082), and #8 (P0-083) are all merged. **PR #9 (P0-012) is green and was merged directly by Claude (squash), per the owner's instruction to stop waiting for manual PR merges** |
 
 ## Ticket log
 
@@ -45,6 +45,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-081 | PASS | `packages/api-client`: openapi-typescript 7.13.0 generates `src/schema.d.ts` from `openapi.json`; `generate:check` regenerates to a temp file and fails on drift. `apps/web/src/lib/api.ts` wires openapi-fetch + openapi-react-query into a typed `useCurrentUser()` calling `GET /api/v1/me`; `providers.tsx` adds a `QueryClientProvider`. CI green on commit `dee346d` (`ci-js`, `ci-python`, `docs`). Real generated `schema.d.ts` and resolved `pnpm-lock.yaml` fetched from the temporary gate-report workflow the same way P0-080 did, then committed; that workflow deleted once green without it |
 | P0-082 | PASS | `src/proxy.ts` (Next 16's rename of `middleware.ts`) sets a per-request CSP nonce (`script-src 'self' 'nonce-<value>' 'strict-dynamic'`, no `'unsafe-inline'`) plus the usual hardening headers; `RootLayout` is `force-dynamic` since a nonce only exists per request. next-intl at one locale (`en`) via `src/i18n/request.ts`/`messages/en.json`; a new ESLint rule (`eslint-rules/no-raw-jsx-text.mjs`) forbids a letter-bearing literal in JSX text or `alt`/`title`/`placeholder`/`aria-label`. `tests/e2e/csp.spec.ts` (Playwright, `webServer`-managed) proves the nonce is present, differs per request, and - via a dedicated `/csp-check` fixture that server-renders a nonced and an un-nonced inline script - that only the nonced one runs. CI green on commit `6b88a8c` (`ci-js`, `ci-python`, `docs`) |
 | P0-083 | PASS | Button/Input/Card/Skeleton primitives (`apps/web/src/components/ui`), token-only styling, each with a Vitest + Testing Library unit test. Storybook 10 (`@storybook/nextjs-vite`) with a story per primitive plus a `tokens.stories.tsx` design-tokens reference page. `tests/e2e/a11y.spec.ts` (its own `playwright.storybook.config.ts`, serving the static Storybook build via `http-server`) enumerates every story from Storybook's `index.json` and scans each with `@axe-core/playwright`, asserting zero serious/critical findings. `no-raw-jsx-text` ESLint rule scoped to exclude `*.test.tsx`/`*.stories.tsx`. CI green on commit `3aa44ca` (`ci-js`, `ci-python`, `docs`); PR #8 self-merged |
+| P0-012 | PASS | `@typescript-eslint/no-explicit-any` raised to `error` (the recommended preset only warns). `.dependency-cruiser.cjs` (dependency-cruiser 18.5.0): `no-circular` plus a project rule forbidding `src/components/ui` from importing `src/app`, so the shared primitives stay app-agnostic; wired as `apps/web`'s `depcruise` script and a `ci-js` step. Vitest config already existed (P0-083). Both gates proven to actually fail on a seeded violation (commit `4f04939`), then reverted (`e852787`): ESLint reported the seeded `any`, depcruise reported `ui-primitives-no-app-imports`. CI green on the clean tree (commit `e852787`); PR #9 self-merged |
 
 ## Owner actions pending
 
@@ -92,16 +93,29 @@ Read this file at the start of every session. Update it at the end of every sess
 | 2026-10-09 | Vite does not read a project's `tsconfig.json` `paths` on its own; Vitest's Vite instance needed the `@/*` alias restated as `resolve.alias` in `vitest.config.ts`, or every primitive's `@/lib/utils` import failed to resolve | Defect found by a real CI failure while building P0-083 |
 | 2026-10-09 | Testing Library's automatic post-test `cleanup()` only self-registers when it finds a global `afterEach` (Jest-style globals); this project's Vitest config doesn't set `test.globals: true`, so without an explicit `afterEach(cleanup)` in `vitest.setup.ts`, components rendered by one test stayed mounted for the next test in the same file, breaking any `getByRole` that expected a single match | Defect found by a real CI failure while building P0-083 |
 | 2026-10-09 | A Playwright config whose `testDir` is a plain directory scan (`playwright.config.ts`, P0-082) also picks up a later-added spec meant for a *different* config (`a11y.spec.ts`, meant only for `playwright.storybook.config.ts`) unless explicitly excluded with `testIgnore` - it then runs that spec against the wrong `webServer` and fails confusingly (`/index.json` 404) | Defect found by a real CI failure while building P0-083 |
+| 2026-10-09 | dependency-cruiser's `tsPreCompilationDeps` option resolves type-only imports by walking into whatever they point at, including `node_modules`; without `options.doNotFollow: { path: "node_modules" }` it reported third-party packages' own internal import cycles (e.g. `@testing-library/user-event`'s `.d.ts` graph) as `no-circular` violations in this project | Defect found by a real CI failure while building P0-012 |
+| 2026-10-09 | A `*.cjs` config file (`.dependency-cruiser.cjs`) under `eslint.config.mjs`'s default (unscoped) rule set fails `no-undef` on `module`, since nothing declares CommonJS globals for it; added a `files: ["*.cjs"]` override with `module`/`require` as `readonly` globals rather than pulling in the `globals` package for one file | Defect found by a real CI failure while building P0-012 |
+| 2026-10-09 | P0-021 ("Docker images for api, worker, web, mcp-server") depends only on P0-030 and P0-080 in the backlog, but a real "worker" image needs `apps/worker` to exist, which is P0-060's job (not yet built), and a real "mcp-server" image needs `apps/mcp-server`, which is P0-070's job - already deferred to the start of Phase 1A by the Option-B time-box decision. Resolution: build P0-060 before P0-021 (it is not itself deferred), and scope P0-021 down to api/worker/web, leaving the mcp-server image to follow P0-070 rather than un-deferring it | Scope decision while sequencing after P0-012, found while re-checking P0-021's practical prerequisites |
 
 ## Exact next step
 
-PR #8 (P0-083) was merged directly (squash) once every check was green, per the
+PR #9 (P0-012) was merged directly (squash) once every check was green, per the
 owner's standing instruction to stop waiting for a manual PR merge. Continue in
 backlog order:
 
-- **P0-021** Docker images for api, worker and web (depends on P0-030, P0-080).
+- **P0-060** Task queue: `TaskQueue` port, Celery adapter (Redis broker), one
+  working job (`ops.ping`), worker container (depends on P0-030, P0-020). Not
+  in the Option-B deferred list (that's P0-055/061/062/070 only) and a real
+  prerequisite for P0-021's "worker" image, since `apps/worker` doesn't exist
+  yet - do this before P0-021, even though the backlog's own `Dependencies`
+  column for P0-021 doesn't list it.
+- **P0-021** Docker images for api, worker and web (depends on P0-030, P0-080,
+  and now P0-060 for the worker image). The backlog also names an
+  `mcp-server` image, but `apps/mcp-server` is P0-070's job and P0-070 is
+  already deferred to the start of Phase 1A (Option B) - scope P0-021 down to
+  api/worker/web and note the mcp-server image as following P0-070 instead of
+  reversing that deferral.
 - **P0-022** one-command setup and README quickstart (depends on P0-020, P0-021, P0-053).
-- **P0-012** TypeScript and JS quality gates (depends on P0-080).
 - **P0-101 to P0-103** JS CI, security scans, end-to-end with a test-only OIDC stub.
 - **P0-110** Phase 0 scorecard and the v0.1.0 tag.
 
