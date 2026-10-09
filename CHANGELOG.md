@@ -13,6 +13,14 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ### Added
 
+- CI security scans and Dependabot (P0-102): a new `ci-security` workflow runs
+  gitleaks **blocking** (pinned to the same version as the pre-commit hook),
+  plus pip-audit, pnpm audit and a Trivy image scan of the api/worker/web
+  images, all report-only in Phase 0 (becoming blocking from Phase 1A). A new
+  `codeql.yml` runs GitHub code scanning for Python and JS/TypeScript,
+  report-only. A new `.github/dependabot.yml` covers the uv lockfile, the
+  pnpm lockfile, each Dockerfile's base images and pinned action versions.
+  Proven end to end: gitleaks turns `ci-security` red on a seeded fake secret.
 - `dev.py up-full` (P0-022): one-command full stack - builds and starts
   postgres, redis, api, worker and web (a new compose profile `full`, so
   CI's and `dev.py up`'s existing plain `up` are unaffected), applies
