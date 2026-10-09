@@ -50,11 +50,11 @@ def celery_app() -> Iterator[object]:
 
     app.register_task(tasks_module.ops_ping)
     app.register_task(tasks_module.ops_flaky)
-    app.conf.update(result_expires=60, task_acks_late=False, worker_prefetch_multiplier=4)
+    app.conf.update(result_expires=60)
     # The default ping check now blocks start_worker() until the embedded
     # worker has actually started consuming, so the test never sends a task
     # before the worker is listening for one.
-    with start_worker(app, pool="solo", loglevel="info", shutdown_timeout=30):
+    with start_worker(app, pool="solo", shutdown_timeout=30):
         yield app
 
 

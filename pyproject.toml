@@ -95,7 +95,14 @@ testpaths = ["apps/api/tests", "apps/worker/tests", "tests"]
 addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
 asyncio_mode = "auto"
 xfail_strict = true
-filterwarnings = ["error"]  # deprecations fail the suite so they are fixed early
+filterwarnings = [
+    "error",  # deprecations fail the suite so they are fixed early
+    # celery's redis result backend still calls the redis-py client's
+    # deprecated pipe.setex() (celery/backends/redis.py) instead of set();
+    # that is celery's own code to fix, not ours, and promoting it to an
+    # error crashes the embedded test worker before it can store a result.
+    "ignore:Call to deprecated setex:DeprecationWarning",
+]
 markers = ["integration: needs local services running (py scripts/dev.py up)"]
 
 [tool.coverage.run]
