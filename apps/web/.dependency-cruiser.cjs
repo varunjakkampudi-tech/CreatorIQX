@@ -29,6 +29,10 @@ module.exports = {
     },
   ],
   options: {
+    // Don't descend into node_modules - without this, resolving type-only
+    // imports (tsPreCompilationDeps below) walks third-party .d.ts files
+    // and reports *their* internal cycles as if they were this project's.
+    doNotFollow: { path: "node_modules" },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: "tsconfig.json" },
     enhancedResolveOptions: {
