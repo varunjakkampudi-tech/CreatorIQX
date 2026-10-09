@@ -6,6 +6,13 @@ All notable changes to CreatorIQX are documented here. Format: [Keep a Changelog
 
 ### Added
 
+- Production Docker images for `apps/api`, `apps/worker` and `apps/web` (P0-021):
+  multi-stage builds, each ending in a non-root final stage. The Python images
+  follow the official `uv` workspace pattern (`uv sync --package <member>`,
+  `ghcr.io/astral-sh/uv:0.12.23`, `python:3.14-slim-trixie`); the web image uses
+  Next.js `output: "standalone"` on `node:22-slim`. New `ci-docker` workflow
+  builds all three and asserts each runs as a non-root user. `mcp-server` is
+  out of scope (depends on P0-070, deferred to Phase 1A).
 - `jobs` module (P0-060): a `TaskQueue` port (`enqueue(JobRequest) -> JobHandle`,
   ADR 0003) with a `CeleryTaskQueue` adapter backed by a Redis broker on its own
   logical database, separate from sessions/quota. One working job, `ops.ping`,
