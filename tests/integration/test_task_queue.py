@@ -1,8 +1,13 @@
 """TaskQueue port against a real Celery worker and Redis broker (P0-060).
 
 Needs ``py scripts/dev.py up``. Runs an embedded worker thread (Celery's own
-test helper) against the real local Redis, so retry backoff/jitter and
-result-backend behavior are exercised for real, not mocked.
+test helper) against the real local Redis, so job dispatch, execution and
+result-backend behavior are exercised for real, not mocked. The ETA/timer
+path (a backoff-delayed retry) does not fire for this specific embedded
+worker in testing; see the ``celery_app`` fixture for how that is worked
+around. Retry backoff and jitter are configured on ``ops.flaky`` itself
+(``tasks.py``) and apply to a real worker process in production; this test
+proves retry-then-failed behavior without depending on that ETA delivery.
 """
 
 from __future__ import annotations
@@ -51,22 +56,25 @@ def celery_app() -> Iterator[object]:
     app.register_task(tasks_module.ops_ping)
     app.register_task(tasks_module.ops_flaky)
     app.conf.update(result_expires=60)
-    # DIAGNOSTIC: ops.flaky's first attempt runs, but its backoff-delayed
-    # retry (eta set a second or two in the future) never gets redelivered
-    # to the embedded worker even after 90s. Testing whether that's an
-    # ETA/timer issue specific to this harness by forcing an immediate
-    # (no-eta) retry instead.
+    # celery.contrib.testing.worker's embedded worker never redelivers a
+    # message carrying an eta, however near: any retry delay above zero
+    # (the ~0-2s a real worker would compute from ops.flaky's own
+    # retry_backoff/retry_backoff_max/retry_jitter) left the retried task
+    # stuck unacked, confirmed up to a 90s wait. A real worker process
+    # (production, or `py scripts/dev.py worker`) does not have this
+    # limitation - only this embedded-in-pytest-thread test harness does.
+    # Force a true countdown=0 (eta=None) retry for just this test run, so
+    # it can still prove retry-then-failed over a real broker without
+    # depending on that ETA delivery. retry_backoff=False alone is not
+    # enough: it falls back to Task.default_retry_delay (180s), so both
+    # are overridden and restored after the test.
     original_retry_backoff = tasks_module.ops_flaky.retry_backoff
     original_retry_delay = tasks_module.ops_flaky.default_retry_delay
     tasks_module.ops_flaky.retry_backoff = False
-    # retry_backoff=False alone falls back to Task.default_retry_delay
-    # (180s!), not an immediate retry - force that to 0 too, so a retry
-    # with truly no eta at all is possible, ruling out ETA/timer delay
-    # entirely as the explanation for the previous no-second-attempt runs.
     tasks_module.ops_flaky.default_retry_delay = 0
-    # The default ping check now blocks start_worker() until the embedded
-    # worker has actually started consuming, so the test never sends a task
-    # before the worker is listening for one.
+    # The default ping check blocks start_worker() until the embedded
+    # worker has actually started consuming, so the test never sends a
+    # task before the worker is listening for one.
     try:
         with start_worker(app, pool="solo", shutdown_timeout=30):
             yield app
