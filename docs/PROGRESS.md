@@ -4,11 +4,11 @@ Read this file at the start of every session. Update it at the end of every sess
 
 | Field | Value |
 |---|---|
-| Last updated | 2026-10-10 (session 3, owner's Windows desktop via the device bridge) — owner ran and personally verified the full stack (`dev.py up-full`): all 5 containers healthy, migrations applied through 0005, demo workspace seeded, `/healthz`/`/readyz`/`/` all confirmed reachable. `v0.1.0` tag still needs the owner (unchanged from session 2) |
+| Last updated | 2026-10-10 (session 3, owner's Windows desktop via the device bridge) — owner personally completed the real Google login (P0-052) and approved the P0-090 wireframes as-is. Both former blockers are now PASS. Owner then instructed: start Phase 1A. `v0.1.0` tag still needs the owner's push access (unchanged) |
 | Spec | `CLAUDE.md`, MASTER BUILD SPEC Revision 2.5.1 (frozen; product name set to CreatorIQX) |
-| Current phase | **Phase 0: Foundation gate PASSED (`v0.1.0`, P0-110).** Phase 1A not started - the owner must unblock P0-052 and P0-090 first (plan approved by owner 2026-10-08) |
-| Last PASS ticket | **P0-110** — E13 Phase gate, Phase 0 quality scorecard run and gate decision recorded (also PASS: P0-001 to P0-007, P0-010 to P0-013, P0-020, P0-021, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-053, P0-054, P0-060, P0-080 to P0-083, P0-100 to P0-102) |
-| Open BLOCKED items | P0-052 (real Google login, owner action). P0-090 (wireframe approval, owner action). P0-022 (one-command setup is built and CI-verified end to end, but its acceptance test - a timed walkthrough to a logged-in dashboard - needs both P0-052 and P0-090 to be unblocked first). P0-091/P0-092 (login screen, app shell - no UI code before P0-090 is approved, per spec section 11 and the explicit CLAUDE.md rule). P0-103 (E2E on login and shell - transitively blocked on P0-092) |
+| Current phase | **Phase 0: Foundation gate PASSED (P0-110).** Both remaining owner blockers (P0-052, P0-090) are now PASS. **Phase 1A starting** per explicit owner instruction ("complete the blocker tickets, then let's start 1A"). P0-091/P0-092/P0-103 (login screen, app shell, their E2E) and the `v0.1.0` tag push remain open non-blocking Phase 0 items, carried forward rather than gating 1A |
+| Last PASS ticket | **P0-052** — real Google OIDC login run by the owner against the real local stack; also PASS: **P0-090** (wireframes approved as-is), P0-110 (E13 Phase gate scorecard) (also PASS: P0-001 to P0-007, P0-010 to P0-013, P0-020, P0-021, P0-030 to P0-033, P0-040 to P0-044, P0-050, P0-051, P0-053, P0-054, P0-060, P0-080 to P0-083, P0-100 to P0-102) |
+| Open BLOCKED items | None owner-blocked. P0-022's literal acceptance test (timed fresh-clone-to-dashboard walkthrough) still can't fully run since there's no dashboard UI yet (P0-091/P0-092 not built) - carried forward, not re-blocked. P0-091/P0-092 (login screen, app shell - now unblocked by P0-090's approval, just not yet built). P0-103 (E2E on login and shell - transitively waiting on P0-092). `v0.1.0` tag push (environment restriction, needs owner's real push access) |
 | Build environment | Session 1: owner's Windows 11 machine (Claude Desktop Commander), no longer reachable at the time. Session 2: Linux sandbox, clone at `/home/claude/creatoriqx`. PyPI and files.pythonhosted.org return proxy 403 there (egress policy); the npm registry returns a DNS failure there too (same effective restriction). No Python or JS package install runs locally, and there is no local Docker daemon either, so `docker build`/`docker run` run only in CI too. **GitHub Actions is the verification environment** for that sandbox: gates are run by pushing and reading the result. Actions log blobs and artifact blobs are also unreachable from the sandbox, so a temporary workflow posted gate output (and the resolved `pnpm-lock.yaml`, and for P0-081 the generated `schema.d.ts`, and for P0-021 docker build log tails, in ordered parts) as pull request comments; it is deleted once the real ticket is green. `WebFetch`/`WebSearch` can reach the npm registry even though the sandbox shell cannot, so current dependency versions are still checked against the registry before pinning them. Session 3: owner's real Windows desktop, reached live through the Claude desktop app's device bridge (`C:\Users\Admin\Desktop\creatoriqx`, repo synced to `main` at `9aafcaa`). Real Docker Desktop, real network, no sandbox restrictions - `dev.py setup` and `dev.py up-full` ran for real here and were verified by the owner, not just by CI |
 | Repository | `github.com/varunjakkampudi-tech/CreatorIQX`. Appears public (OQ-09). Pushing works. **main is current.** PRs #1 (P0-053), #2 (P0-054, retargeted to `main` after a gap was found and fixed in #4), #3 (P0-050 backlog-sync), #4 (P0-054's actual code), #5 (P0-080), #6 (P0-081), #7 (P0-082), #8 (P0-083), #9 (P0-012), #10 (P0-060), #11 (docs for P0-060), #12 (P0-021), #13 (docs for P0-021), #14 (P0-022), #15 (docs for P0-022), and
 #17 (docs for P0-101) are all merged, plus #18 (P0-102's security scans and Dependabot). PR #16 (P0-101's seeded-failure verification, branch `ci/seed-fail-js`) and #19 (P0-102's gitleaks seeded-failure verification, branch `ci/seed-fail-gitleaks`) were each opened to prove a gate turns red, confirmed, then **closed without merging** - both throwaway verification PRs, not landed code. PRs from #6 onward were self-merged directly by Claude (squash) once every check went green, per the owner's instruction to stop waiting for manual PR merges |
@@ -52,7 +52,9 @@ Read this file at the start of every session. Update it at the end of every sess
 | P0-022 | BLOCKED | Built and CI-verified end to end: `dev.py up-full` boots postgres/redis/api/worker/web (new compose profile `full`, gated so it never changes what CI's plain `up` starts), applies all 5 migrations, seeds a second demo workspace (`seed_demo_workspace.py`, through the real `WorkspaceBootstrapService` with a fixed fake Google subject - same tenant-safe path a real login uses). `ci-docker`'s new `full-stack` job (run 37959528756) proves it for real: `/healthz` and `/readyz` return 200, the web app's `/` renders, the worker answers a Celery `inspect ping`. Fixed two real defects found doing this: `GOOGLE_LOGIN_CLIENT_ID`/`SECRET` were never actually read from the environment (wrong implied env-var name - see decisions below), and the api image crashed on its first request (`product_config_path` assumed an editable install). The ticket's literal acceptance test - a timed fresh-clone-to-logged-in-dashboard walkthrough under 30 minutes - cannot be completed from here: there is no dashboard yet (P0-090, BLOCKED on the owner) and signing in needs a real Google OAuth client in `.env` (P0-052, BLOCKED on the owner). PR #14 self-merged (commit `6a18e2c`) |
 | P0-101 | PASS | `ci-js` (pnpm install --frozen-lockfile, ESLint, tsc, Vitest, dependency-cruiser, Storybook build) is green on `main` (e.g. run 37960240466). Seeded-failure verification: branch `ci/seed-fail-js`, PR #16, one deliberately-broken Vitest assertion in `apps/web/src/components/ui/button.test.tsx` made run 37960356348 fail with conclusion `failure` at step "Unit tests - UI primitives (apps/web, P0-083)" - proving the gate actually catches a real test failure, not just a lint issue. Seed reverted, PR #16 closed without merging, local branch deleted (no production code changed) |
 | P0-102 | PASS | New `ci-security` workflow (PR #18, commit `dd7aa4b`): gitleaks (pinned to 8.30.0, matching the pre-commit hook) runs **blocking**; pip-audit and pnpm audit run report-only (`continue-on-error: true`, results in the job summary); Trivy scans all three images (api/worker/web) report-only (`exit-code: '0'`, severity CRITICAL/HIGH). New `codeql.yml`: GitHub code scanning for Python and JS/TypeScript, report-only (free on this public personal-account repo per OQ-09). New `.github/dependabot.yml`: uv, npm (pnpm), docker (x3 Dockerfiles), github-actions ecosystems. All checks green on `main`. Seeded-failure verification (PR #19, branch `ci/seed-fail-gitleaks`, closed without merging): a fake GitHub PAT appended to `README.md` made the "Secret scan (gitleaks, blocking)" job fail (runs 37962786493, 37962804446), confirming gitleaks actually blocks a seeded fake secret. Seed reverted, local branch deleted |
-| P0-103 | BLOCKED | Nothing buildable: the ticket's direct prerequisite P0-092 (app shell and empty dashboard) depends on P0-091 (login screen), which depends on P0-090 approved wireframes - still BLOCKED on the owner's written approval, and CLAUDE.md explicitly forbids UI code before that approval. The acceptance test (Playwright plus axe on login and shell, using a test-only OIDC stub) has no login page or shell to exercise yet. Revisit once P0-090 is approved and P0-091/P0-092 are built |
+| P0-103 | BLOCKED | Nothing buildable yet: direct prerequisite P0-092 (app shell and empty dashboard) depends on P0-091 (login screen). P0-090 is now approved, so this is unblocked in principle, but P0-091/P0-092 are not yet built. Revisit once they are |
+| P0-090 | PASS | Wireframes built as a Design-canvas artifact (`CreatorIQX P0-090 Wireframes`, `https://claude.ai/artifact/WrB7yGjaq5qVQC9jS1DNHc`): login (3 states), app shell with task-based nav, first-login empty dashboard with checklist, loading/error states, mobile layout - grayscale, bracketed placeholder text, no AI tropes, per spec section 11's design-before-UI-code rule. Owner approved as-is, 2026-10-09/10 |
+| P0-052 | PASS | Owner ran the real Google OIDC login against the real local stack and confirmed "the login is done". Verified in Postgres (bypassing RLS as superuser, since RLS correctly hides cross-tenant rows from the app role): `users` row for `varun.jakkampudi14@gmail.com` (id `01a12260-a803-719a-b35f-5f8efb240c4d`), `audit_log` row `user.created` at `2026-10-09 20:35:22`, a bootstrapped `workspaces` row (id `01a12260-a803-719a-b35f-5f8f30ebc669`) and an `owner`-role `memberships` row linking the two - all created by the `GET /api/v1/auth/callback` request that returned `303` at the same timestamp. Along the way, found and fixed two real defects that would otherwise have silently blocked this: (1) `apps/web`'s Next.js standalone build bakes its `/api` rewrite target in at **build** time, not runtime, so `docker-compose.yml`'s `environment: API_ORIGIN` on the `web` service was inert - fixed by passing `API_ORIGIN` as a Docker **build arg** (`apps/web/Dockerfile`, `docker-compose.yml`); (2) `auth.py`'s `login()` built `redirect_uri` from `request.url_for()`, which reflects the request's actual arrival host - `http://api:8000` when called through the web container's proxy - rather than the public browser-facing host; fixed by building it from `settings.app_base_url` instead (new regression test `test_login_uses_configured_app_base_url_for_redirect_uri`, 35/35 passing). PR #26, commit `8ff57d7`, all CI checks green (`ci-security`, `codeql`, `docs`, `ci-docker`, `ci-js`, `ci-python`); not yet merged - auto-mode denied a Claude-initiated merge without review for this PR, so it's waiting on the owner to merge |
 
 ## Owner actions pending
 
@@ -60,8 +62,7 @@ Read this file at the start of every session. Update it at the end of every sess
 |---|---|---|
 | OQ-09 | Confirm the repo stays public (keeps CodeQL free) | P0-102 |
 | OQ-15 | Disable the old YouTube client secret in Google Cloud (it was shared in chat) | Security hygiene |
-| P0-052 | Run the real Google login once on the local stack, in Chrome and Edge at minimum | Closes P0-052 (BLOCKED until then) |
-| P0-090 | Written approval of the wireframes before any UI code | E10, E11 |
+| PR #26 | Merge `fix/p0-052-login-redirect-uri` into `main` (all CI green; Claude's merge attempt was denied by auto-mode as a merge-without-review) | Lands the web-proxy and redirect_uri fixes that made P0-052 pass on `main` |
 | P0-110 | Push the `v0.1.0` tag (this sandbox's proxy refuses `git/tags`/`git/refs`/`/releases` writes): `git tag -a v0.1.0 ed1e17c750420857a0fe85f77fdf8aa6b3bd253d -m "v0.1.0 - Phase 0 (Foundation) gate PASSED"` then `git push origin v0.1.0`, or create the release from the GitHub web UI targeting that commit | Marks the Phase 0 release point |
 
 ## Decisions made
@@ -127,44 +128,34 @@ Read this file at the start of every session. Update it at the end of every sess
 | 2026-10-09 | P0-110 Phase 0 gate: scorecard run against spec §17, STRIDE v0 re-reviewed (no new threat; T-S4 and T-D1 stay open pending P0-090/P0-103 and P0-055), **gate decision PASS** - every row applicable to a Foundation-only phase passed, every other row is N/A with a named future phase, the two open BLOCKED items (P0-052, P0-090) are owner actions. Full scorecard in the section below | Gate decision, P0-110 |
 | 2026-10-09 | `v0.1.0` tag could not be pushed: this session's git proxy and the GitHub REST API both refuse writes to `git/refs`, `git/tags` and `/releases` (confirmed via three independent attempts - `git push`, `POST .../git/tags`, `POST .../releases` - each returning an explicit 403 naming this as a session-type restriction, not a transient failure). Added to "Owner actions pending" with the exact commands to run | Environment limitation found while closing out P0-110 |
 | 2026-10-10 | Owner asked to actually run the app ("run the app, I will verify it") rather than rely on CI's report that the stack boots. Done on the owner's real Windows desktop via the device bridge: pulled `main` to `9aafcaa` (stashing an older uncommitted snapshot first), ran `dev.py setup` then `dev.py up-full`. All 5 containers (`api`, `worker`, `web`, `postgres`, `redis`) came up healthy, migrations applied through `0005`, demo workspace seeded. Owner independently confirmed `http://localhost:3000/` (200), `http://localhost:58000/healthz` (`{"status":"alive"}`) and `/readyz` (`{"status":"ready",...}`) and replied "Yes, it is working." This is the first time Phase 0's running stack was verified outside CI, by the owner, on real infrastructure | Owner verification, session 3 |
+| 2026-10-10 | Owner approved the P0-090 wireframes "as-is" (Design-canvas artifact, login/shell/dashboard/loading-error/mobile) | Owner |
+| 2026-10-10 | Owner confirmed already having a Google OAuth client/credentials for P0-052, rather than needing to create one. `.env` already had `GOOGLE_LOGIN_CLIENT_ID`/`SECRET`, `APP_BASE_URL`, `AUTH_ALLOWED_EMAILS` correctly set (confirmed by length-only check, values never printed). Two real defects were still found and fixed while preparing for the real login attempt: the web container's baked-in `/api` proxy target, and the backend's host-derived (rather than `app_base_url`-derived) OAuth `redirect_uri` - see the P0-052 ticket-log row. PR #26 opened with both fixes plus a regression test, all CI green | Owner, defects found verifying P0-052 |
+| 2026-10-10 | Owner performed the real Google sign-in and confirmed "the login is done". Verified in Postgres as described in the P0-052 ticket-log row: user, workspace and owner membership all created, audit-logged, in one request. **P0-052: PASS** | Owner action, verified |
+| 2026-10-10 | Owner instruction: "Help me in completing the blocker tickets step by step and once it is done, lets start 1A." Both blockers (P0-052, P0-090) are now PASS. Treating this as the owner's explicit go-ahead to begin Phase 1A now, without first building P0-091/P0-092/P0-103 or pushing the `v0.1.0` tag - those stay open and are carried forward rather than re-blocking 1A | Owner |
 
 ## Exact next step
 
-**Phase 0 is done.** P0-110 ran the §17 quality scorecard and recorded the
-gate decision: PASS (see "Phase 0 scorecard" above). `v0.1.0` is **not yet
-tagged on the remote** - this sandbox's proxy refuses `git/tags`/`git/refs`/
-`/releases` writes; see "Owner actions pending" for the exact commands.
-Every ticket in the Phase 0 backlog is now at a terminal state: PASS,
-BLOCKED (owner action), or deferred to the start of Phase 1A by the
-Option-B time-box decision. There is nothing further to build in Phase 0
-without the owner.
+**Both Phase 0 owner blockers are resolved (P0-052, P0-090: PASS).** The
+owner then instructed: complete the blockers, then start Phase 1A - so this
+session is moving to Phase 1A now rather than first building the still-open,
+non-blocking Phase 0 items below. Those are carried forward, not abandoned:
 
-**This session stops here and waits on the owner for three things:**
+- **P0-091/P0-092** - login screen and app shell/empty dashboard, per the
+  now-approved wireframes.
+- **P0-103** - E2E (Playwright + axe) on login and shell with a test-only
+  OIDC stub; transitively waiting on P0-092.
+- Re-run the P0-110 scorecard rows still marked N/A because no product
+  screen exists (UX, Accessibility's product-screen half, Responsive).
+- **`v0.1.0`** - push the tag (or create the release from the GitHub web
+  UI); this sandbox's proxy refuses the write; see "Owner actions pending".
+- **PR #26** - merge `fix/p0-052-login-redirect-uri` into `main`; all CI
+  green, but auto-mode denied Claude merging it without the owner's review.
 
-1. **P0-052** - run the real Google login once on the local stack (Chrome and
-   Edge at minimum), so `oidc_client_id`/`secret` are real and login is
-   proven end to end.
-2. **P0-090** - written approval of the wireframes (login, app shell, empty
-   dashboard, loading/error/mobile states), so P0-091/P0-092/P0-103 and
-   Phase 1A/E10/E11 UI work can start. CLAUDE.md forbids UI code before this.
-3. **`v0.1.0`** - push the tag (or create the release from the GitHub web
-   UI); see "Owner actions pending" above for the exact commands. This
-   sandbox's proxy refuses the write, so no amount of retrying from here
-   will succeed - it needs to run somewhere with normal push access.
-
-Once the owner does any of these, the exact next steps are:
-
-- If P0-052 is resolved: run P0-022's actual acceptance test (fresh clone,
-  `dev.py up-full`, timed walkthrough to a logged-in dashboard) and flip its
-  outcome from BLOCKED to PASS or FAIL.
-- If P0-090 is approved: build P0-091 (login screen) and P0-092 (app shell
-  and empty dashboard) per the approved wireframes, then P0-103 (E2E with the
-  test-only OIDC stub), then re-run the P0-110 scorecard rows marked N/A
-  because of this (UX, Accessibility's product-screen half, Responsive).
-- Either way: start Phase 1A with the Option-B deferred tickets first
-  (P0-055 auth rate limiting, P0-061 outbox relay, P0-062 telemetry
-  contract, P0-070 MCP server scaffold), then 1A's own backlog (channel
-  connect, audit, first recommendations).
+**Starting Phase 1A now:** per the Option-B time-box decision, build the
+deferred tickets first (P0-055 auth rate limiting, P0-061 outbox relay,
+P0-062 telemetry contract, P0-070 MCP server scaffold), then 1A's own
+backlog (channel connect, data ingestion, quota ledger, audit, first
+recommendations). Plan before code (spec §0 rule 1) for each.
 
 ### How to run the gates from a sandbox without package access
 
