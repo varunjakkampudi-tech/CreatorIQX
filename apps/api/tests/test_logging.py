@@ -19,6 +19,7 @@ def _client() -> TestClient:
     settings = Settings(
         database_app_url=SecretStr("postgresql+asyncpg://u:p@localhost:1/db"),
         redis_url=SecretStr("redis://localhost:1/0"),
+        session_secret=SecretStr("test-session-secret-at-least-32-chars"),
     )
     return TestClient(create_app(settings, checks=[]))
 

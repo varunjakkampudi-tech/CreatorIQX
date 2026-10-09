@@ -18,6 +18,7 @@ def _settings(**overrides: object) -> Settings:
         "redis_url": SecretStr("redis://localhost:1/0"),
         "app_base_url": ALLOWED_ORIGIN,
         "max_request_body_bytes": 1000,
+        "session_secret": SecretStr("test-session-secret-at-least-32-chars"),
     }
     values.update(overrides)
     return Settings(**values)  # type: ignore[arg-type]

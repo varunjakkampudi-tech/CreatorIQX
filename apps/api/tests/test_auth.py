@@ -16,7 +16,7 @@ import hashlib
 import urllib.parse
 from dataclasses import dataclass
 
-import httpx
+import httpx2
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
@@ -39,6 +39,7 @@ from creatoriqx_api.settings import Settings
 # ---------------------------------------------------------------------------
 # Fake OIDC provider for unit tests
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class FakeOIDCProvider:
@@ -99,6 +100,7 @@ VALID_USER = OIDCUserInfo(
 # Domain type tests
 # ---------------------------------------------------------------------------
 
+
 class TestOIDCUserInfo:
     def test_frozen_and_immutable(self) -> None:
         user = OIDCUserInfo(subject="s", email="e@e.com")
@@ -121,6 +123,7 @@ class TestOIDCTokenValidationError:
 # ---------------------------------------------------------------------------
 # AuthService unit tests (application layer)
 # ---------------------------------------------------------------------------
+
 
 class TestAuthServiceStartLogin:
     def test_returns_url_and_flow_state(self) -> None:
@@ -181,9 +184,7 @@ class TestAuthServiceCompleteLogin:
                 flow_state=flow,
             )
 
-    async def test_exchange_failure_raises_auth_error(
-        self, flow: LoginFlowState
-    ) -> None:
+    async def test_exchange_failure_raises_auth_error(self, flow: LoginFlowState) -> None:
         provider = FakeOIDCProvider(
             exchange_error=OIDCProviderError("Token endpoint error"),
         )
@@ -195,9 +196,7 @@ class TestAuthServiceCompleteLogin:
                 flow_state=flow,
             )
 
-    async def test_bad_nonce_is_rejected(
-        self, flow: LoginFlowState
-    ) -> None:
+    async def test_bad_nonce_is_rejected(self, flow: LoginFlowState) -> None:
         provider = FakeOIDCProvider(
             validate_error=OIDCTokenValidationError("Nonce mismatch"),
         )
@@ -209,9 +208,7 @@ class TestAuthServiceCompleteLogin:
                 flow_state=flow,
             )
 
-    async def test_wrong_audience_is_rejected(
-        self, flow: LoginFlowState
-    ) -> None:
+    async def test_wrong_audience_is_rejected(self, flow: LoginFlowState) -> None:
         provider = FakeOIDCProvider(
             validate_error=OIDCTokenValidationError("ID token audience mismatch"),
         )
@@ -223,9 +220,7 @@ class TestAuthServiceCompleteLogin:
                 flow_state=flow,
             )
 
-    async def test_expired_token_is_rejected(
-        self, flow: LoginFlowState
-    ) -> None:
+    async def test_expired_token_is_rejected(self, flow: LoginFlowState) -> None:
         provider = FakeOIDCProvider(
             validate_error=OIDCTokenValidationError("ID token has expired"),
         )
@@ -237,9 +232,7 @@ class TestAuthServiceCompleteLogin:
                 flow_state=flow,
             )
 
-    async def test_unverified_email_is_rejected(
-        self, flow: LoginFlowState
-    ) -> None:
+    async def test_unverified_email_is_rejected(self, flow: LoginFlowState) -> None:
         provider = FakeOIDCProvider(
             validate_error=OIDCTokenValidationError("Email not verified by Google"),
         )
@@ -303,6 +296,7 @@ class TestCodeChallenge:
 # API route integration tests (with mocked provider)
 # ---------------------------------------------------------------------------
 
+
 def _make_settings(**overrides: object) -> Settings:
     values: dict[str, object] = {
         "database_app_url": SecretStr("postgresql+asyncpg://u:p@localhost:1/db"),
@@ -362,7 +356,7 @@ class TestCallbackRoute:
         include_code: bool = True,
         include_state: bool = True,
         error: str | None = None,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Helper: perform a login, then hit the callback with the stored state."""
         client = _make_client(provider, allowed_emails=allowed_emails)
         # Step 1: Hit /login to generate flow state in the session.
@@ -397,23 +391,17 @@ class TestCallbackRoute:
 
     def test_mismatched_state_returns_400(self) -> None:
         provider = FakeOIDCProvider(user=VALID_USER)
-        response = self._do_login_and_callback(
-            provider, callback_state="WRONG-STATE"
-        )
+        response = self._do_login_and_callback(provider, callback_state="WRONG-STATE")
         assert response.status_code == 400
 
     def test_missing_code_returns_401(self) -> None:
         provider = FakeOIDCProvider(user=VALID_USER)
-        response = self._do_login_and_callback(
-            provider, include_code=False
-        )
+        response = self._do_login_and_callback(provider, include_code=False)
         assert response.status_code == 401
 
     def test_missing_state_returns_401(self) -> None:
         provider = FakeOIDCProvider(user=VALID_USER)
-        response = self._do_login_and_callback(
-            provider, include_state=False
-        )
+        response = self._do_login_and_callback(provider, include_state=False)
         assert response.status_code == 401
 
     def test_google_error_returns_401(self) -> None:
@@ -484,6 +472,7 @@ class TestAuthRouterNotMountedWithoutClientId:
 # ---------------------------------------------------------------------------
 # Settings allow-list property tests
 # ---------------------------------------------------------------------------
+
 
 class TestAllowedEmailsSet:
     def test_empty_string_returns_empty_frozenset(self) -> None:

@@ -25,6 +25,7 @@ def _generate() -> dict[str, Any]:
     # Dependency-free placeholders: schema generation never connects anywhere.
     os.environ.setdefault("DATABASE_APP_URL", "postgresql+asyncpg://x:x@localhost:1/x")
     os.environ.setdefault("REDIS_URL", "redis://localhost:1/0")
+    os.environ.setdefault("SESSION_SECRET", "openapi-export-placeholder-secret-32-chars")
     from creatoriqx_api.main import create_app  # imported late so env is set first
 
     schema: dict[str, Any] = create_app(checks=[]).openapi()

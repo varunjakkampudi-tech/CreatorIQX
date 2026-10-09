@@ -57,6 +57,7 @@ Read this file at the start of every session. Update it at the end of every sess
 | 2026-10-08 | Build runs on the owner's Windows machine; Python pinned to 3.14 (uv's managed 3.13 failed to link on this machine) | Environment |
 | 2026-10-08 | YouTube client secret rotated by owner (OQ-15 closed) | Owner |
 | 2026-10-09 | `idempotency_keys` is tenant-scoped with forced RLS (unique on workspace_id+key); `outbox_events` has no `workspace_id` and stays outside RLS, since the relay worker must read unpublished rows across every tenant | Plan detail decided while building P0-043 |
+| 2026-10-09 | main went red after `99ff451` (P0-050): `uv.lock` not updated, `itsdangerous` undeclared, test `Settings` missing `session_secret`, one file not ruff-formatted, a mypy `httpx`/`httpx2` mismatch in the tests. Repaired in the fix commit that follows P0-044/P0-050 on `main`. All gates green again: lint, mypy, import-linter, both drift checks, 141 tests | Repair, found while verifying P0-044 |
 | 2026-10-09 | `audit_log` append-only is enforced in two independent layers: RLS itself (no UPDATE/DELETE policy = default deny) and a trigger that blocks UPDATE/DELETE for every role including the owner, as a backstop if a policy is ever added | Plan detail decided while building P0-043 |
 
 ## Exact next step
