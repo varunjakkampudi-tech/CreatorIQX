@@ -72,7 +72,10 @@ async def get_app_info() -> dict[str, object]:
 
 def main() -> None:
     """Entry point for ``python -m creatoriqx_mcp_server.server`` (the Compose CMD)."""
-    host = os.environ.get("MCP_SERVER_HOST", "0.0.0.0")
+    # Safe default for local/bare runs: bind every interface only when told to
+    # (the Dockerfile's MCP_SERVER_HOST=0.0.0.0 env var), same convention as
+    # apps/api's and apps/web's Dockerfile CMD lines, not hardcoded here.
+    host = os.environ.get("MCP_SERVER_HOST", "127.0.0.1")
     port = int(os.environ.get("MCP_SERVER_PORT", "8000"))
     mcp.run(transport="streamable-http", host=host, port=port)
 

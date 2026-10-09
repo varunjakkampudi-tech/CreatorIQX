@@ -14,10 +14,10 @@ import tomllib
 from pathlib import Path
 from types import TracebackType
 
+import httpx
 import pytest
 
 import creatoriqx_mcp_server
-import creatoriqx_mcp_server.server as server_module
 from creatoriqx_mcp_server.server import PRODUCT_NAME, check_readiness, get_app_info, mcp
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
@@ -79,7 +79,7 @@ async def test_check_readiness_true_when_the_api_answers_200(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        server_module.httpx,
+        httpx,
         "AsyncClient",
         lambda **kwargs: _FakeAsyncClient(_FakeResponse(200, '{"status":"ready"}'), **kwargs),
     )
@@ -94,7 +94,7 @@ async def test_check_readiness_false_on_a_non_200_response(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        server_module.httpx,
+        httpx,
         "AsyncClient",
         lambda **kwargs: _FakeAsyncClient(_FakeResponse(503, "not ready"), **kwargs),
     )
@@ -108,10 +108,8 @@ async def test_check_readiness_false_on_a_non_200_response(
 async def test_check_readiness_false_and_no_raise_when_the_api_is_unreachable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import httpx
-
     monkeypatch.setattr(
-        server_module.httpx,
+        httpx,
         "AsyncClient",
         lambda **kwargs: _FakeAsyncClient(httpx.ConnectError("refused"), **kwargs),
     )
@@ -126,7 +124,7 @@ async def test_get_app_info_reports_product_name_version_and_readiness(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        server_module.httpx,
+        httpx,
         "AsyncClient",
         lambda **kwargs: _FakeAsyncClient(_FakeResponse(200, "ok"), **kwargs),
     )
