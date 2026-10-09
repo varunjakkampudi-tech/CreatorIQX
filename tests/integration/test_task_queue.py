@@ -51,11 +51,21 @@ def celery_app() -> Iterator[object]:
     app.register_task(tasks_module.ops_ping)
     app.register_task(tasks_module.ops_flaky)
     app.conf.update(result_expires=60)
+    # DIAGNOSTIC: ops.flaky's first attempt runs, but its backoff-delayed
+    # retry (eta set a second or two in the future) never gets redelivered
+    # to the embedded worker even after 90s. Testing whether that's an
+    # ETA/timer issue specific to this harness by forcing an immediate
+    # (no-eta) retry instead.
+    original_retry_backoff = tasks_module.ops_flaky.retry_backoff
+    tasks_module.ops_flaky.retry_backoff = False
     # The default ping check now blocks start_worker() until the embedded
     # worker has actually started consuming, so the test never sends a task
     # before the worker is listening for one.
-    with start_worker(app, pool="solo", shutdown_timeout=30):
-        yield app
+    try:
+        with start_worker(app, pool="solo", shutdown_timeout=30):
+            yield app
+    finally:
+        tasks_module.ops_flaky.retry_backoff = original_retry_backoff
 
 
 def test_enqueue_via_port_job_completes_result_observed(celery_app: object) -> None:
@@ -82,7 +92,7 @@ def test_failing_job_retries_then_lands_in_failed_state(celery_app: object) -> N
 
     async_result = celery_app.AsyncResult(handle.job_id)  # type: ignore[attr-defined]
     with pytest.raises(RuntimeError, match=re.escape("ops.flaky always fails, by design")):
-        async_result.get(timeout=90)
+        async_result.get(timeout=30)
 
     assert async_result.state == "FAILURE"
     # max_retries=2: the task retried at least once before Celery gave up
