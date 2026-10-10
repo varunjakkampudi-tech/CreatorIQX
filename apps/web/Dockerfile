@@ -40,6 +40,14 @@ COPY apps/web apps/web
 COPY packages/config packages/config
 COPY packages/api-client packages/api-client
 
+# next.config.ts reads API_ORIGIN at build time (Next.js standalone output
+# bakes rewrite destinations into the compiled server; the final stage never
+# ships next.config.ts, so a runtime env var on the "web" service has no
+# effect). docker-compose.yml passes this as a build arg so the container's
+# /api rewrite points at the "api" service, not the next.config.ts default
+# of 127.0.0.1:8000, which does not exist inside the web container.
+ARG API_ORIGIN=http://127.0.0.1:8000
+ENV API_ORIGIN=${API_ORIGIN}
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter @creatoriqx/web build
 

@@ -69,6 +69,7 @@ class FakeOIDCProvider:
     # Record calls for assertion.
     last_code: str | None = None
     last_nonce: str | None = None
+    last_redirect_uri: str | None = None
 
     def build_authorization_url(
         self,
@@ -77,6 +78,7 @@ class FakeOIDCProvider:
         nonce: str,
         code_verifier: str,
     ) -> str:
+        self.last_redirect_uri = redirect_uri
         return f"https://accounts.google.com/o/oauth2/v2/auth?state={state}"
 
     async def exchange_code(
@@ -368,6 +370,21 @@ class TestLoginRoute:
         assert response.status_code == 302
         # The login flow is bound to the browser by a single-use cookie.
         assert "creatoriqx_oidc_flow" in response.cookies
+
+    def test_login_uses_configured_app_base_url_for_redirect_uri(self) -> None:
+        # Regression test: the request may arrive through a server-to-server
+        # proxy (the web app's /api rewrite hitting the api container
+        # directly, e.g. "http://api:8000" in Docker Compose) whose host is
+        # never reachable from a browser and never matches what's registered
+        # in Google Cloud Console. The redirect_uri sent to Google must come
+        # from the configured app_base_url, not from the request's own
+        # scheme/host - found as a real bug (TestClient's base_url is
+        # "https://testserver", standing in for exactly that mismatch).
+        provider = FakeOIDCProvider(user=VALID_USER)
+        client = _make_client(provider)
+        response = client.get("/api/v1/auth/login", follow_redirects=False)
+        assert response.status_code == 302
+        assert provider.last_redirect_uri == "http://localhost:3000/api/v1/auth/callback"
 
 
 class TestCallbackRoute:

@@ -148,6 +148,12 @@ services:
     build:
       context: ../..
       dockerfile: apps/web/Dockerfile
+      # next.config.ts's rewrite destination is baked in at build time
+      # (Next.js standalone output does not re-read next.config.ts at
+      # runtime), so API_ORIGIN must reach the build as a build arg, not
+      # only as the (otherwise-ineffective) runtime environment below.
+      args:
+        API_ORIGIN: http://api:8000
     restart: unless-stopped
     environment:
       API_ORIGIN: http://api:8000

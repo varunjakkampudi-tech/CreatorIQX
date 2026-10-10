@@ -91,7 +91,18 @@ async def login(
     auth_service: AuthServiceDep,
     store: KeyValueStoreDep,
 ) -> RedirectResponse:
-    callback_url = str(request.url_for("auth_callback"))
+    # Build the callback URL from the configured app_base_url, never from
+    # request.url_for()'s scheme/host: this request may have arrived through
+    # the web app's /api rewrite (a server-to-server call to the "api"
+    # service, e.g. "http://api:8000" inside Docker Compose), so url_for()
+    # would bake that internal address into the redirect_uri sent to Google -
+    # unreachable from the browser and mismatched against what's registered
+    # in Google Cloud Console. app_base_url is the one address actually
+    # meant to be public (it is already used the same way for the
+    # post-login redirect below).
+    callback_path = request.url_for("auth_callback").path
+    settings = request.app.state.settings
+    callback_url = f"{settings.app_base_url.rstrip('/')}{callback_path}"
     authorization_url, flow = auth_service.start_login(callback_url)
 
     flow_id = secrets.token_urlsafe(32)
