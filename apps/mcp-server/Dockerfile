@@ -46,6 +46,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # --- final: slim runtime image, non-root ----------------------------------
 FROM python:${PYTHON_VERSION}-slim-trixie
 
+# Pick up Debian security patches published after this base image tag was
+# built (Trivy image scan, ci-security.yml).
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system --gid 10001 creatoriqx \
     && useradd --system --uid 10001 --gid creatoriqx --no-create-home creatoriqx
 
