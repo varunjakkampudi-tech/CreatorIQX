@@ -1,6 +1,144 @@
 {
   "components": {
     "schemas": {
+      "ChapterIn": {
+        "properties": {
+          "start_seconds": {
+            "title": "Start Seconds",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start_seconds",
+          "title"
+        ],
+        "title": "ChapterIn",
+        "type": "object"
+      },
+      "ChapterVersionOut": {
+        "properties": {
+          "chapters": {
+            "items": {
+              "$ref": "#/components/schemas/ChapterIn"
+            },
+            "title": "Chapters",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_current": {
+            "title": "Is Current",
+            "type": "boolean"
+          },
+          "parent_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Version Id"
+          },
+          "transcript_id": {
+            "format": "uuid",
+            "title": "Transcript Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "transcript_id",
+          "chapters",
+          "parent_version_id",
+          "is_current"
+        ],
+        "title": "ChapterVersionOut",
+        "type": "object"
+      },
+      "CreateChapterVersionIn": {
+        "properties": {
+          "chapters": {
+            "items": {
+              "$ref": "#/components/schemas/ChapterIn"
+            },
+            "title": "Chapters",
+            "type": "array"
+          },
+          "transcript_id": {
+            "format": "uuid",
+            "title": "Transcript Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "transcript_id",
+          "chapters"
+        ],
+        "title": "CreateChapterVersionIn",
+        "type": "object"
+      },
+      "CreateMetadataVersionIn": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "disclosure_altered": {
+            "default": false,
+            "title": "Disclosure Altered",
+            "type": "boolean"
+          },
+          "disclosure_synthetic": {
+            "default": false,
+            "title": "Disclosure Synthetic",
+            "type": "boolean"
+          },
+          "rationale": {
+            "default": "",
+            "title": "Rationale",
+            "type": "string"
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "CreateMetadataVersionIn",
+        "type": "object"
+      },
       "CreatePlanIn": {
         "properties": {
           "notes": {
@@ -42,6 +180,36 @@
         "title": "CreatePlanIn",
         "type": "object"
       },
+      "CreateScriptVersionIn": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/ScriptAuthor",
+            "default": "human"
+          },
+          "body": {
+            "default": "",
+            "title": "Body",
+            "type": "string"
+          },
+          "hook": {
+            "default": "",
+            "title": "Hook",
+            "type": "string"
+          },
+          "outline": {
+            "default": "",
+            "title": "Outline",
+            "type": "string"
+          },
+          "variant_label": {
+            "default": "default",
+            "title": "Variant Label",
+            "type": "string"
+          }
+        },
+        "title": "CreateScriptVersionIn",
+        "type": "object"
+      },
       "CurrentWorkspaceOut": {
         "description": "The session's workspace and what the caller may do in it.",
         "properties": {
@@ -64,6 +232,20 @@
           "role"
         ],
         "title": "CurrentWorkspaceOut",
+        "type": "object"
+      },
+      "GenerateChaptersIn": {
+        "properties": {
+          "transcript_id": {
+            "format": "uuid",
+            "title": "Transcript Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "transcript_id"
+        ],
+        "title": "GenerateChaptersIn",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -107,6 +289,109 @@
           "role"
         ],
         "title": "MeOut",
+        "type": "object"
+      },
+      "MetadataVersionOut": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "character_limit_warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Character Limit Warnings",
+            "type": "array"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "disclosure_altered": {
+            "title": "Disclosure Altered",
+            "type": "boolean"
+          },
+          "disclosure_synthetic": {
+            "title": "Disclosure Synthetic",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_current": {
+            "title": "Is Current",
+            "type": "boolean"
+          },
+          "parent_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Version Id"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "tags",
+          "category",
+          "disclosure_altered",
+          "disclosure_synthetic",
+          "rationale",
+          "parent_version_id",
+          "is_current"
+        ],
+        "title": "MetadataVersionOut",
+        "type": "object"
+      },
+      "PasteTranscriptIn": {
+        "properties": {
+          "language": {
+            "default": "en",
+            "title": "Language",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "PasteTranscriptIn",
         "type": "object"
       },
       "PlanOut": {
@@ -181,6 +466,114 @@
         "title": "Role",
         "type": "string"
       },
+      "ScriptAuthor": {
+        "description": "Who wrote this version (spec §7 ``script_versions``: \"author (human or AI)\").",
+        "enum": [
+          "human",
+          "ai"
+        ],
+        "title": "ScriptAuthor",
+        "type": "string"
+      },
+      "ScriptVersionOut": {
+        "properties": {
+          "author": {
+            "title": "Author",
+            "type": "string"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "hook": {
+            "title": "Hook",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_current": {
+            "title": "Is Current",
+            "type": "boolean"
+          },
+          "outline": {
+            "title": "Outline",
+            "type": "string"
+          },
+          "parent_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Version Id"
+          },
+          "variant_label": {
+            "title": "Variant Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "variant_label",
+          "author",
+          "hook",
+          "outline",
+          "body",
+          "parent_version_id",
+          "is_current"
+        ],
+        "title": "ScriptVersionOut",
+        "type": "object"
+      },
+      "SegmentOut": {
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "end_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Seconds"
+          },
+          "start_seconds": {
+            "title": "Start Seconds",
+            "type": "number"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start_seconds",
+          "end_seconds",
+          "text",
+          "confidence"
+        ],
+        "title": "SegmentOut",
+        "type": "object"
+      },
       "SessionOut": {
         "description": "The signed-in user and the token the client must send on unsafe requests.",
         "properties": {
@@ -223,6 +616,74 @@
         "title": "SessionOut",
         "type": "object"
       },
+      "TranscriptOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_fully_timed": {
+            "title": "Is Fully Timed",
+            "type": "boolean"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "parent_transcript_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Transcript Id"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/SegmentOut"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "video_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Id"
+          }
+        },
+        "required": [
+          "id",
+          "video_id",
+          "source",
+          "language",
+          "version",
+          "parent_transcript_id",
+          "is_fully_timed",
+          "segments"
+        ],
+        "title": "TranscriptOut",
+        "type": "object"
+      },
       "TransitionIn": {
         "properties": {
           "to_status": {
@@ -233,6 +694,29 @@
           "to_status"
         ],
         "title": "TransitionIn",
+        "type": "object"
+      },
+      "UploadTranscriptIn": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "language": {
+            "default": "en",
+            "title": "Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "content"
+        ],
+        "title": "UploadTranscriptIn",
         "type": "object"
       },
       "ValidationError": {
@@ -536,6 +1020,718 @@
         "summary": "The video board",
         "tags": [
           "videos"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/chapters": {
+      "get": {
+        "operationId": "list_chapter_versions_api_v1_videos__video_id__chapters_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ChapterVersionOut"
+                  },
+                  "title": "Response List Chapter Versions Api V1 Videos  Video Id  Chapters Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compare chapter versions",
+        "tags": [
+          "chapters"
+        ]
+      },
+      "post": {
+        "operationId": "create_chapter_version_api_v1_videos__video_id__chapters_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChapterVersionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChapterVersionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create a chapter version",
+        "tags": [
+          "chapters"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/chapters/generate": {
+      "post": {
+        "operationId": "generate_chapter_version_api_v1_videos__video_id__chapters_generate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateChaptersIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChapterVersionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Draft chapters from a transcript",
+        "tags": [
+          "chapters"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/chapters/{version_id}/restore": {
+      "post": {
+        "operationId": "restore_chapter_version_api_v1_videos__video_id__chapters__version_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Version Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChapterVersionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore an old chapter version",
+        "tags": [
+          "chapters"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/metadata": {
+      "get": {
+        "operationId": "list_metadata_versions_api_v1_videos__video_id__metadata_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MetadataVersionOut"
+                  },
+                  "title": "Response List Metadata Versions Api V1 Videos  Video Id  Metadata Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compare metadata versions",
+        "tags": [
+          "metadata"
+        ]
+      },
+      "post": {
+        "operationId": "create_metadata_version_api_v1_videos__video_id__metadata_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMetadataVersionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataVersionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create a metadata version",
+        "tags": [
+          "metadata"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/metadata/{version_id}/restore": {
+      "post": {
+        "operationId": "restore_metadata_version_api_v1_videos__video_id__metadata__version_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Version Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataVersionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore an old metadata version",
+        "tags": [
+          "metadata"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/scripts": {
+      "get": {
+        "operationId": "list_script_versions_api_v1_videos__video_id__scripts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScriptVersionOut"
+                  },
+                  "title": "Response List Script Versions Api V1 Videos  Video Id  Scripts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compare script versions",
+        "tags": [
+          "scripts"
+        ]
+      },
+      "post": {
+        "operationId": "create_script_version_api_v1_videos__video_id__scripts_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScriptVersionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptVersionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create a script version",
+        "tags": [
+          "scripts"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/scripts/{version_id}/restore": {
+      "post": {
+        "operationId": "restore_script_version_api_v1_videos__video_id__scripts__version_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Version Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptVersionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore an old script version",
+        "tags": [
+          "scripts"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/transcripts": {
+      "get": {
+        "operationId": "list_transcripts_api_v1_videos__video_id__transcripts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TranscriptOut"
+                  },
+                  "title": "Response List Transcripts Api V1 Videos  Video Id  Transcripts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "This video's transcript versions",
+        "tags": [
+          "transcripts"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/transcripts/paste": {
+      "post": {
+        "operationId": "paste_transcript_api_v1_videos__video_id__transcripts_paste_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasteTranscriptIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Paste a transcript",
+        "tags": [
+          "transcripts"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/transcripts/upload": {
+      "post": {
+        "operationId": "upload_transcript_api_v1_videos__video_id__transcripts_upload_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadTranscriptIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload a transcript file",
+        "tags": [
+          "transcripts"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/transcripts/{transcript_id}": {
+      "get": {
+        "operationId": "get_transcript_api_v1_videos__video_id__transcripts__transcript_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "transcript_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Transcript Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One transcript",
+        "tags": [
+          "transcripts"
         ]
       }
     },
