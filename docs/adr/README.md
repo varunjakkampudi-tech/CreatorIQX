@@ -17,3 +17,4 @@ Every significant decision gets an ADR (spec §0.4). Copy [`0000-template.md`](0
 | [0011](0011-workspace-bootstrap-at-first-login.md) | Bootstrap the user, personal workspace and owner membership at first login | Accepted | 2026-10-09 |
 | [0012](0012-rbac-in-the-application-layer-with-a-route-harness.md) | Decide authorization in the application layer, and prove it with a route-enumerating harness | Accepted | 2026-10-09 |
 | [0013](0013-video-lifecycle-state-machine.md) | Enforce the video lifecycle as a domain-layer state machine, audited on every transition | Accepted | 2026-10-10 |
+| [0014](0014-transcripts-and-versioned-content.md) | Shared transcripts module and versioned script/metadata/chapter artifacts | Accepted | 2026-10-10 |

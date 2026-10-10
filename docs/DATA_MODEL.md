@@ -40,6 +40,16 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+    chapter_versions {
+        uuid workspace_id
+        uuid video_id
+        uuid transcript_id "FK"
+        jsonb chapters
+        uuid parent_version_id "FK"
+        boolean is_current
+        uuid id "PK"
+        timestamp created_at
+    }
     channels {
         uuid workspace_id "UK"
         string youtube_channel_id "UK"
@@ -70,6 +80,21 @@ erDiagram
         uuid id "PK"
         timestamp created_at
         timestamp updated_at
+    }
+    metadata_versions {
+        uuid workspace_id
+        uuid video_id
+        string title
+        text description
+        jsonb tags
+        string category
+        boolean disclosure_altered
+        boolean disclosure_synthetic
+        text rationale
+        uuid parent_version_id "FK"
+        boolean is_current
+        uuid id "PK"
+        timestamp created_at
     }
     oauth_connections {
         uuid workspace_id "UK"
@@ -129,6 +154,40 @@ erDiagram
         uuid id "PK"
         timestamp created_at
     }
+    script_versions {
+        uuid workspace_id
+        uuid video_id
+        string variant_label
+        string author
+        text hook
+        text outline
+        text body
+        uuid parent_version_id "FK"
+        boolean is_current
+        uuid id "PK"
+        timestamp created_at
+    }
+    transcript_segments {
+        uuid workspace_id
+        uuid transcript_id "FK"
+        int ordinal
+        float start_seconds
+        float end_seconds
+        text text
+        float confidence
+        uuid id "PK"
+        timestamp created_at
+    }
+    transcripts {
+        uuid workspace_id
+        uuid video_id
+        string source
+        string language
+        int version
+        uuid parent_transcript_id "FK"
+        uuid id "PK"
+        timestamp created_at
+    }
     usage_events {
         uuid workspace_id
         uuid user_id
@@ -163,10 +222,16 @@ erDiagram
         timestamp updated_at
     }
     channels ||--o{ channel_videos : "channel_id"
+    transcripts ||--o{ chapter_versions : "transcript_id"
+    chapter_versions ||--o{ chapter_versions : "parent_version_id"
     users ||--o{ memberships : "user_id"
     workspaces ||--o{ memberships : "workspace_id"
+    metadata_versions ||--o{ metadata_versions : "parent_version_id"
     channels ||--o{ oauth_connections : "channel_id"
     channels ||--o{ recommendations : "channel_id"
+    script_versions ||--o{ script_versions : "parent_version_id"
+    transcripts ||--o{ transcript_segments : "transcript_id"
+    transcripts ||--o{ transcripts : "parent_transcript_id"
     plans ||--o{ videos : "plan_id"
 ```
 
@@ -178,15 +243,20 @@ read it only through that module's public interface or domain events.
 | Table | Owning module | Tenant-scoped (`workspace_id`) |
 |---|---|---|
 | `audit_log` | audit | yes |
+| `chapter_versions` | content | yes |
 | `channel_videos` | youtube | yes |
 | `channels` | youtube | yes |
 | `idempotency_keys` | jobs | yes |
 | `memberships` | workspaces | yes |
+| `metadata_versions` | content | yes |
 | `oauth_connections` | youtube | yes |
 | `outbox_events` | jobs | no |
 | `plans` | planning | yes |
 | `quota_ledger` | youtube | yes |
 | `recommendations` | intelligence | yes |
+| `script_versions` | content | yes |
+| `transcript_segments` | transcripts | yes |
+| `transcripts` | transcripts | yes |
 | `usage_events` | telemetry | yes |
 | `users` | identity | no |
 | `videos` | planning | yes |

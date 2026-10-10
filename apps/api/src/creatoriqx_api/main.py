@@ -18,6 +18,15 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from creatoriqx_api import __version__
+from creatoriqx_api.modules.content.api.chapters import router as chapters_router
+from creatoriqx_api.modules.content.api.metadata import router as content_metadata_router
+from creatoriqx_api.modules.content.api.scripts import router as scripts_router
+from creatoriqx_api.modules.content.application.chapter_service import ChapterService
+from creatoriqx_api.modules.content.application.metadata_service import MetadataService
+from creatoriqx_api.modules.content.application.script_service import ScriptService
+from creatoriqx_api.modules.content.infrastructure.sql_chapter_store import SqlChapterStore
+from creatoriqx_api.modules.content.infrastructure.sql_metadata_store import SqlMetadataStore
+from creatoriqx_api.modules.content.infrastructure.sql_script_store import SqlScriptStore
 from creatoriqx_api.modules.identity.api.auth import router as auth_router
 from creatoriqx_api.modules.identity.api.me import router as me_router
 from creatoriqx_api.modules.identity.api.sessions import router as sessions_router
@@ -43,6 +52,11 @@ from creatoriqx_api.modules.planning.application.video_lifecycle_service import 
 )
 from creatoriqx_api.modules.planning.infrastructure.sql_plan_store import SqlPlanStore
 from creatoriqx_api.modules.planning.infrastructure.sql_video_store import SqlVideoStore
+from creatoriqx_api.modules.transcripts.api.transcripts import router as transcripts_router
+from creatoriqx_api.modules.transcripts.application.transcript_service import TranscriptService
+from creatoriqx_api.modules.transcripts.infrastructure.sql_transcript_store import (
+    SqlTranscriptStore,
+)
 from creatoriqx_api.modules.workspaces.api.routes import router as workspaces_router
 from creatoriqx_api.modules.workspaces.application.access_service import WorkspaceAccessService
 from creatoriqx_api.modules.workspaces.application.bootstrap_service import (
@@ -141,6 +155,12 @@ def create_app(
     _wire_planning(app, engine)
     app.include_router(planner_router, prefix=API_V1_PREFIX)
     app.include_router(videos_router, prefix=API_V1_PREFIX)
+    _wire_transcripts(app, engine)
+    app.include_router(transcripts_router, prefix=API_V1_PREFIX)
+    _wire_content(app, engine)
+    app.include_router(scripts_router, prefix=API_V1_PREFIX)
+    app.include_router(content_metadata_router, prefix=API_V1_PREFIX)
+    app.include_router(chapters_router, prefix=API_V1_PREFIX)
     app.state.task_queue = CeleryTaskQueue()
 
     if settings.oidc_client_id:
@@ -205,6 +225,30 @@ def _wire_planning(app: FastAPI, engine: AsyncEngine) -> None:
     video_store = SqlVideoStore(factory)
     app.state.planner_service = PlannerService(plan_store, video_store)
     app.state.video_lifecycle_service = VideoLifecycleService(video_store)
+
+
+def _wire_transcripts(app: FastAPI, engine: AsyncEngine) -> None:
+    """The shared transcript service (Phase 1C, spec feature 22). No feature
+    flag: paste/upload need no external credentials, like the planner.
+    """
+    factory = create_session_factory(engine)
+    transcript_store = SqlTranscriptStore(factory)
+    app.state.transcript_store = transcript_store
+    app.state.transcript_service = TranscriptService(transcript_store)
+
+
+def _wire_content(app: FastAPI, engine: AsyncEngine) -> None:
+    """Script, metadata/SEO and chapter version services (Phase 1C).
+
+    ``ChapterService`` is built after ``_wire_transcripts`` and takes the
+    same ``SqlTranscriptStore`` instance directly - it satisfies the
+    ``TranscriptStore`` protocol, so no new port is needed to read a
+    transcript from inside the content module.
+    """
+    factory = create_session_factory(engine)
+    app.state.script_service = ScriptService(SqlScriptStore(factory))
+    app.state.metadata_service = MetadataService(SqlMetadataStore(factory))
+    app.state.chapter_service = ChapterService(SqlChapterStore(factory), app.state.transcript_store)
 
 
 def _wire_youtube(app: FastAPI, settings: Settings, engine: AsyncEngine, redis: Redis) -> None:

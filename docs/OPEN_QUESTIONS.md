@@ -33,6 +33,12 @@ Unverified facts and pending decisions. Rule (spec §0.3): prefer official docum
 | OQ-19 | Does Google always return a `refresh_token` on `access_type=offline&prompt=consent` for a first-time connection? | Assumed yes when `prompt=consent` is forced (`GoogleYouTubeOAuthProvider.exchange_code` raises `YouTubeOAuthError` if one is missing, rather than silently storing a connection it can't refresh) | Google OAuth 2.0 for Web Server Applications docs | P1A-03 | Open - behavior reviewed against current docs, not yet exercised against a real consent screen |
 | OQ-20 | ADR 0009 describes a reconciliation step (rebuild the Redis quota counter from the Postgres ledger after a flush). Is this required for Phase 1A's PASS, or can it follow in a later ticket? | Not implemented in P1A-04; a Redis flush simply starts a fresh quota window early (fails open, not a security issue, just an honesty gap against the ADR's original text) | ADR 0009 | P1A-04 | Open - owner decision needed: accept the gap for now, or treat it as blocking before Phase 1A's gate |
 
+## Phase 1C findings (2026-10-10)
+
+| ID | Question | Conservative assumption until verified | Source to check | Needed by | Status |
+|---|---|---|---|---|---|
+| OQ-21 | Exact YouTube Data API v3 scope, endpoint and caption-track format needed to import a channel's own captions as a transcript (the `youtube_captions` transcript source) | Not implemented this phase: `TranscriptService.import_youtube_captions` raises `TranscriptSourceUnavailableError` rather than guessing at a scope or format; no route exposes it | YouTube Data API v3 `captions.list`/`captions.download` docs | Feature 22, before `youtube_captions` is wired up | Open |
+
 ## Environment findings (2026-10-08)
 
 | ID | Question | Conservative assumption until verified | Source to check | Needed by | Status |
