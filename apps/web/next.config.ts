@@ -15,6 +15,12 @@ const nextConfig: NextConfig = {
   // production Docker image (P0-021): copying it plus .next/static and
   // public/ into the final stage avoids shipping full node_modules.
   output: "standalone",
+  // Workspace packages are consumed as raw TS source (package.json
+  // "exports" points at src/index.ts, no build step) - Next must
+  // transpile them itself rather than treating them as pre-built
+  // node_modules, or its bundler can't resolve the nodenext-style
+  // "./client.js" specifier that actually points at client.ts.
+  transpilePackages: ["@creatoriqx/api-client", "@creatoriqx/config"],
   async rewrites() {
     return [
       {

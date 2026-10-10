@@ -37,3 +37,4 @@ coverage.json
 
 # Tool caches
 .import_linter_cache/
+*.tsbuildinfo

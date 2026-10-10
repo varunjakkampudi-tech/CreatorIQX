@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import productConfig from "@creatoriqx/config/product.json" with { type: "json" };
 import { cn } from "@/lib/utils";
@@ -53,6 +54,12 @@ export default async function TokensFoundationPage() {
           </div>
         ))}
       </div>
+      <Link
+        href="/dashboard"
+        className="inline-flex w-fit items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-base font-medium text-brand-ink transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      >
+        {t("openApp")}
+      </Link>
     </main>
   );
 }

@@ -1,2 +1,2 @@
-export { createApiClient } from "./client.js";
-export type { paths, components } from "./schema.js";
+export { createApiClient } from "./client";
+export type { paths, components } from "./schema";

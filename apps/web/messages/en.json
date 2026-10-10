@@ -1,5 +1,82 @@
 {
   "TokensFoundationPage": {
-    "caption": "Frontend foundation (P0-082): design tokens only. Product screens follow once P0-090's wireframes are approved."
+    "caption": "Frontend foundation (P0-082): design tokens only. Product screens follow once P0-090's wireframes are approved.",
+    "openApp": "Open dashboard"
+  },
+  "AppShell": {
+    "productName": "CreatorIQX",
+    "navDashboard": "Dashboard",
+    "navPlanner": "Planner",
+    "navVideos": "Videos",
+    "navSettings": "Settings",
+    "signIn": "Sign in with Google",
+    "signOut": "Sign out",
+    "signedInAs": "Signed in"
+  },
+  "SignInCard": {
+    "title": "Sign in to continue",
+    "body": "Connect your Google account to load your workspace, plans and videos.",
+    "cta": "Sign in with Google"
+  },
+  "DashboardPage": {
+    "title": "Dashboard",
+    "subtitle": "A quick look at what's planned and in progress.",
+    "plansCard": "Plans in the backlog",
+    "videosCard": "Videos in motion",
+    "publishedCard": "Published",
+    "emptyPlans": "No plans yet. Add your first idea on the Planner page.",
+    "emptyVideos": "No videos yet. Promote a plan from the Planner to get started.",
+    "goToPlanner": "Go to Planner",
+    "goToVideos": "Go to Videos",
+    "recentVideos": "Recent videos"
+  },
+  "PlannerPage": {
+    "title": "Planner",
+    "subtitle": "Your backlog and series, organized by idea.",
+    "newIdea": "New idea",
+    "titleLabel": "Title",
+    "titlePlaceholder": "e.g. How I edit in 10 minutes",
+    "seriesLabel": "Series",
+    "seriesPlaceholder": "e.g. Editing Tips",
+    "notesLabel": "Notes",
+    "notesPlaceholder": "Optional notes for this idea",
+    "add": "Add idea",
+    "adding": "Adding...",
+    "empty": "No ideas yet. Add your first one above.",
+    "noSeries": "Unsorted",
+    "promote": "Promote to video",
+    "promoting": "Promoting...",
+    "promoted": "Promoted",
+    "error": "Something went wrong. Try again."
+  },
+  "VideosPage": {
+    "title": "Videos",
+    "subtitle": "Every video, grouped by where it is in the workflow.",
+    "empty": "No videos in this stage.",
+    "untitled": "Untitled video",
+    "status": {
+      "idea": "Idea",
+      "planned": "Planned",
+      "drafting": "Drafting",
+      "qa": "QA",
+      "in_review": "In review",
+      "approved": "Approved",
+      "scheduled": "Scheduled",
+      "published": "Published",
+      "analyzed": "Analyzed",
+      "rejected": "Rejected",
+      "archived": "Archived"
+    }
+  },
+  "SettingsPage": {
+    "title": "Settings",
+    "subtitle": "Your account and workspace.",
+    "accountSection": "Account",
+    "email": "Email",
+    "role": "Role",
+    "workspaceSection": "Workspace",
+    "workspaceName": "Name",
+    "signOut": "Sign out",
+    "notSignedIn": "You're not signed in."
   }
 }
