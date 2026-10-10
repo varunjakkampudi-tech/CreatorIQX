@@ -17,6 +17,7 @@ Runs against creatoriqx_test. Needs ``py scripts/dev.py up``.
 from __future__ import annotations
 
 import asyncio
+import os
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -24,8 +25,9 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from dotenv import dotenv_values
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from creatoriqx_api.modules.youtube.domain.connection import ChannelInfo, OAuthTokens
 from creatoriqx_api.modules.youtube.infrastructure.sql_connection_store import (
@@ -33,18 +35,39 @@ from creatoriqx_api.modules.youtube.infrastructure.sql_connection_store import (
 )
 from creatoriqx_api.platform.crypto import TokenCipher, generate_key, load_key
 
-from .test_rls import _add_user, _add_workspace, _test_url
-
 pytestmark = pytest.mark.integration
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ALEMBIC_INI = REPO_ROOT / "apps" / "api" / "alembic.ini"
 
 
+# Duplicated from test_rls.py rather than imported: this test suite's own
+# convention (set when test_planning_routes.py was written, P1B-05) avoids
+# importing fixtures/fakes across test modules, since the top-level
+# tests/integration directory has no __init__.py and collides under some
+# import modes.
+def _test_url(key: str) -> str:
+    value = dotenv_values(REPO_ROOT / ".env").get(key)
+    if not value:
+        pytest.fail(f"{key} missing from .env. Run: py scripts/dev.py setup")
+    base, _ = value.rsplit("/", 1)
+    return f"{base}/creatoriqx_test"
+
+
+async def _add_user(session: AsyncSession, user_id: uuid.UUID, email: str) -> None:
+    await session.execute(
+        text("INSERT INTO users (id, email) VALUES (:i, :e)"), {"i": user_id, "e": email}
+    )
+
+
+async def _add_workspace(session: AsyncSession, workspace_id: uuid.UUID, name: str) -> None:
+    await session.execute(
+        text("INSERT INTO workspaces (id, name) VALUES (:i, :n)"), {"i": workspace_id, "n": name}
+    )
+
+
 @pytest.fixture(scope="module", autouse=True)
 def _schema_at_head() -> None:
-    import os
-
     os.environ["ALEMBIC_DATABASE_URL"] = _test_url("DATABASE_OWNER_URL")
     command.upgrade(Config(str(ALEMBIC_INI)), "head")
 
