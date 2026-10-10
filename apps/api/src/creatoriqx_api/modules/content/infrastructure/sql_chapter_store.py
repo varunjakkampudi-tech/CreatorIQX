@@ -79,7 +79,8 @@ def _to_domain(row: ChapterVersionRow) -> ChapterVersion:
         video_id=row.video_id,
         transcript_id=row.transcript_id,
         chapters=tuple(
-            Chapter(start_seconds=c["start_seconds"], title=c["title"]) for c in row.chapters
+            Chapter(start_seconds=int(c["start_seconds"]), title=str(c["title"]))
+            for c in row.chapters
         ),
         parent_version_id=row.parent_version_id,
         is_current=row.is_current,

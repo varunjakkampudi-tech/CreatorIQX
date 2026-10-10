@@ -13,6 +13,7 @@ import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from typing import Protocol
 
 import pytest
 from fastapi import FastAPI
@@ -84,36 +85,49 @@ class FakeTranscriptStore:
         return [t for t in self.transcripts.values() if t.video_id == video_id]
 
 
+class _VersionLike(Protocol):
+    """Structural shape every version dataclass below shares."""
+
+    id: uuid.UUID
+    workspace_id: uuid.UUID
+    video_id: uuid.UUID
+    is_current: bool
+
+
+def _with_current[V: _VersionLike](record: V, is_current: bool) -> V:
+    return dataclasses.replace(record, is_current=is_current)  # type: ignore[type-var]
+
+
 @dataclass
-class FakeVersionStore:
+class FakeVersionStore[V: _VersionLike]:
     """Generic "exactly one is_current per video" fake, duplicated per
     version type below (same convention as ``test_content_services.py``)."""
 
-    rows: dict[uuid.UUID, object] = field(default_factory=dict)
+    rows: dict[uuid.UUID, V] = field(default_factory=dict)
 
-    async def _create(self, *, video_id: uuid.UUID, record: object) -> object:
+    async def _create(self, *, video_id: uuid.UUID, record: V) -> V:
         for existing_id, existing in list(self.rows.items()):
-            if getattr(existing, "video_id", None) == video_id:
-                self.rows[existing_id] = dataclasses.replace(existing, is_current=False)  # type: ignore[call-overload]
-        self.rows[record.id] = record  # type: ignore[attr-defined]
+            if existing.video_id == video_id:
+                self.rows[existing_id] = _with_current(existing, False)
+        self.rows[record.id] = record
         return record
 
-    async def get(self, *, workspace_id: uuid.UUID, version_id: uuid.UUID) -> object | None:
+    async def get(self, *, workspace_id: uuid.UUID, version_id: uuid.UUID) -> V | None:
         row = self.rows.get(version_id)
-        if row is None or row.workspace_id != workspace_id:  # type: ignore[attr-defined]
+        if row is None or row.workspace_id != workspace_id:
             return None
         return row
 
-    async def list_for_video(self, *, workspace_id: uuid.UUID, video_id: uuid.UUID) -> list:
+    async def list_for_video(self, *, workspace_id: uuid.UUID, video_id: uuid.UUID) -> list[V]:
         return [
             r
             for r in self.rows.values()
-            if r.workspace_id == workspace_id and r.video_id == video_id  # type: ignore[attr-defined]
+            if r.workspace_id == workspace_id and r.video_id == video_id
         ]
 
 
 @dataclass
-class FakeScriptStore(FakeVersionStore):
+class FakeScriptStore(FakeVersionStore[ScriptVersion]):
     async def create(self, version: NewScriptVersion) -> ScriptVersion:
         record = ScriptVersion(
             id=uuid.uuid4(),
@@ -132,7 +146,7 @@ class FakeScriptStore(FakeVersionStore):
 
 
 @dataclass
-class FakeMetadataStore(FakeVersionStore):
+class FakeMetadataStore(FakeVersionStore[MetadataVersion]):
     async def create(self, version: NewMetadataVersion) -> MetadataVersion:
         record = MetadataVersion(
             id=uuid.uuid4(),
@@ -153,7 +167,7 @@ class FakeMetadataStore(FakeVersionStore):
 
 
 @dataclass
-class FakeChapterStore(FakeVersionStore):
+class FakeChapterStore(FakeVersionStore[ChapterVersion]):
     async def create(self, version: NewChapterVersion) -> ChapterVersion:
         record = ChapterVersion(
             id=uuid.uuid4(),
