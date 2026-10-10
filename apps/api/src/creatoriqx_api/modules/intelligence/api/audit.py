@@ -1,9 +1,9 @@
 """Channel audit routes (spec §4 feature #2).
 
-  POST /intelligence/channels/{channel_id}/audit   run an audit now
-  GET  /intelligence/channels/{channel_id}/recommendations  list its findings
-  POST /intelligence/recommendations/{id}/accept   mark accepted
-  POST /intelligence/recommendations/{id}/dismiss  mark dismissed
+POST /intelligence/channels/{channel_id}/audit   run an audit now
+GET  /intelligence/channels/{channel_id}/recommendations  list its findings
+POST /intelligence/recommendations/{id}/accept   mark accepted
+POST /intelligence/recommendations/{id}/dismiss  mark dismissed
 """
 
 from __future__ import annotations

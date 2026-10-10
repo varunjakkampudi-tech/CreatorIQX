@@ -19,7 +19,10 @@ from creatoriqx_api.modules.youtube.domain.connection import (
     ConnectionStatus,
     OAuthTokens,
 )
-from creatoriqx_api.modules.youtube.domain.errors import ChannelNotConnectedError, YouTubeOAuthStateMismatchError
+from creatoriqx_api.modules.youtube.domain.errors import (
+    ChannelNotConnectedError,
+    YouTubeOAuthStateMismatchError,
+)
 
 _WORKSPACE = uuid.uuid4()
 _USER = uuid.uuid4()
@@ -77,7 +80,12 @@ class FakeConnectionStore:
     disconnected: list[uuid.UUID] = field(default_factory=list)
 
     async def save_connection(
-        self, *, workspace_id: uuid.UUID, connected_by_user_id: uuid.UUID, tokens: OAuthTokens, channel: ChannelInfo
+        self,
+        *,
+        workspace_id: uuid.UUID,
+        connected_by_user_id: uuid.UUID,
+        tokens: OAuthTokens,
+        channel: ChannelInfo,
     ) -> ConnectedChannel:
         channel_id = uuid.uuid4()
         connected = ConnectedChannel(
@@ -96,7 +104,9 @@ class FakeConnectionStore:
     async def list_channels(self, workspace_id: uuid.UUID) -> list[ConnectedChannel]:
         return list(self.channels.values())
 
-    async def get_active_connection(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID) -> ActiveConnection:
+    async def get_active_connection(
+        self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID
+    ) -> ActiveConnection:
         raise NotImplementedError
 
     async def update_access_token(self, *, connection_id: uuid.UUID, tokens: OAuthTokens) -> None:
@@ -108,7 +118,9 @@ class FakeConnectionStore:
         self.disconnected.append(channel_id)
         del self.channels[channel_id]
 
-    async def update_channel_stats(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID, channel: ChannelInfo) -> None:
+    async def update_channel_stats(
+        self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID, channel: ChannelInfo
+    ) -> None:
         raise NotImplementedError
 
 
@@ -152,7 +164,7 @@ class TestStartConnect:
 
 class TestCompleteConnect:
     async def test_valid_state_completes_the_connection(self) -> None:
-        service, store, state_store = _service()
+        service, _store, _state_store = _service()
         url = await service.start_connect(
             workspace_id=_WORKSPACE, user_id=_USER, redirect_uri="http://localhost/cb"
         )
@@ -163,7 +175,7 @@ class TestCompleteConnect:
         )
         assert channel.youtube_channel_id == "UC123"
         assert channel.title == "Test Channel"
-        assert len(store.channels) == 1
+        assert len(_store.channels) == 1
 
     async def test_state_is_single_use(self) -> None:
         service, _store, _state_store = _service()
@@ -215,7 +227,7 @@ class TestCompleteConnect:
 
 class TestListAndDisconnect:
     async def test_list_channels_returns_connected_channels(self) -> None:
-        service, store, _state_store = _service()
+        service, _store, _state_store = _service()
         url = await service.start_connect(
             workspace_id=_WORKSPACE, user_id=_USER, redirect_uri="http://localhost/cb"
         )

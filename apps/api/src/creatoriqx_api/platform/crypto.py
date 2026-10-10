@@ -44,7 +44,9 @@ class EncryptedValue:
 
     def to_storable(self) -> str:
         """Pack into one opaque string for a single encrypted-text database column."""
-        return f"{self.key_id}:{base64.b64encode(self.nonce).decode()}:{base64.b64encode(self.ciphertext).decode()}"
+        nonce_b64 = base64.b64encode(self.nonce).decode()
+        ciphertext_b64 = base64.b64encode(self.ciphertext).decode()
+        return f"{self.key_id}:{nonce_b64}:{ciphertext_b64}"
 
     @classmethod
     def from_storable(cls, raw: str) -> EncryptedValue:

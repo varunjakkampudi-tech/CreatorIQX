@@ -12,7 +12,7 @@ integration test; it is not meant to be enqueued by product code.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from celery import Task
@@ -24,6 +24,18 @@ from creatoriqx_api.modules.jobs.infrastructure.celery_app import celery_app
 from creatoriqx_api.modules.jobs.infrastructure.outbox_gateway import SqlOutboxGateway
 from creatoriqx_api.platform.database import create_engine, create_session_factory
 from creatoriqx_api.settings import get_settings
+
+if TYPE_CHECKING:
+    # Type-checking only: the module boundary (ADR 0003's jobs-celery-boundary
+    # contract permits jobs.infrastructure to build other modules' adapters,
+    # same as _default_relay() already does for the outbox) stays a runtime
+    # lazy import inside each function below, not a module-level dependency.
+    from creatoriqx_api.modules.intelligence.application.audit_service import (
+        ChannelAuditService,
+    )
+    from creatoriqx_api.modules.youtube.application.ingestion_service import (
+        ChannelIngestionService,
+    )
 
 logger = structlog.get_logger(__name__)
 
@@ -108,10 +120,15 @@ def outbox_relay(limit: int = 50, correlation_id: str | None = None) -> dict[str
         return {"relayed": relayed}
 
 
-def _build_youtube_ingestion_service() -> Any:
+def _build_youtube_ingestion_service() -> ChannelIngestionService:
     # Built per task invocation, same reasoning as _default_relay(): Celery
     # imports this module to register tasks before Settings' required
     # fields are necessarily available.
+    from redis.asyncio import Redis
+
+    from creatoriqx_api.modules.youtube.application.ingestion_service import (
+        ChannelIngestionService,
+    )
     from creatoriqx_api.modules.youtube.infrastructure.quota_ledger import (
         RedisPostgresQuotaLedger,
     )
@@ -122,11 +139,7 @@ def _build_youtube_ingestion_service() -> Any:
     from creatoriqx_api.modules.youtube.infrastructure.youtube_data_api import (
         HttpYouTubeDataApiClient,
     )
-    from creatoriqx_api.modules.youtube.application.ingestion_service import (
-        ChannelIngestionService,
-    )
     from creatoriqx_api.platform.crypto import TokenCipher, load_key
-    from redis.asyncio import Redis
 
     settings = get_settings()
     factory: async_sessionmaker[Any] = create_session_factory(create_engine(settings))
@@ -165,14 +178,12 @@ def youtube_ingest_channel(
         channel_id = uuid.UUID(payload["channel_id"])
         logger.info("youtube.ingest_channel.start", workspace_id=str(workspace_id))
         service = _build_youtube_ingestion_service()
-        ingested = asyncio.run(
-            service.ingest(workspace_id=workspace_id, channel_id=channel_id)
-        )
+        ingested = asyncio.run(service.ingest(workspace_id=workspace_id, channel_id=channel_id))
         logger.info("youtube.ingest_channel.done", ingested=ingested)
         return {"ingested": ingested}
 
 
-def _build_channel_audit_service() -> Any:
+def _build_channel_audit_service() -> ChannelAuditService:
     from creatoriqx_api.modules.intelligence.application.audit_service import (
         ChannelAuditService,
     )
@@ -213,8 +224,6 @@ def intelligence_run_audit(
         channel_id = uuid.UUID(payload["channel_id"])
         logger.info("intelligence.run_audit.start", workspace_id=str(workspace_id))
         service = _build_channel_audit_service()
-        recommendations = asyncio.run(
-            service.run(workspace_id=workspace_id, channel_id=channel_id)
-        )
+        recommendations = asyncio.run(service.run(workspace_id=workspace_id, channel_id=channel_id))
         logger.info("intelligence.run_audit.done", count=len(recommendations))
         return {"recommendation_count": len(recommendations)}

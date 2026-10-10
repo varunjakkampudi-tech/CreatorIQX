@@ -70,9 +70,7 @@ class RedisPostgresQuotaLedger:
     ) -> None:
         today = datetime.now(UTC).date()
         key = _counter_key(workspace_id, provider, today)
-        allowed = await self._script(
-            keys=[key], args=[units, self._daily_cap, _DAY_SECONDS]
-        )
+        allowed = await self._script(keys=[key], args=[units, self._daily_cap, _DAY_SECONDS])
         if not allowed:
             raise QuotaExhaustedError(
                 detail=f"Daily quota of {self._daily_cap} units exhausted for {provider}"

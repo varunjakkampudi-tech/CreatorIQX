@@ -49,9 +49,7 @@ class OAuthConnection(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (UniqueConstraint("workspace_id", "channel_id"),)
 
     workspace_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    channel_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("channels.id"), nullable=False
-    )
+    channel_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("channels.id"), nullable=False)
     provider: Mapped[str] = mapped_column(String(32), nullable=False)
     connected_by_user_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
     # Base64(nonce):base64(ciphertext) under crypto.EncryptedValue.to_storable();
@@ -72,9 +70,7 @@ class ChannelVideo(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (UniqueConstraint("workspace_id", "channel_id", "youtube_video_id"),)
 
     workspace_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    channel_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("channels.id"), nullable=False
-    )
+    channel_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("channels.id"), nullable=False)
     youtube_video_id: Mapped[str] = mapped_column(String(32), nullable=False)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")

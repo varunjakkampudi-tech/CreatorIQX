@@ -39,9 +39,7 @@ class ChannelAuditService:
         self._video_reader = video_reader
         self._recommendation_store = recommendation_store
 
-    async def run(
-        self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID
-    ) -> list[Recommendation]:
+    async def run(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID) -> list[Recommendation]:
         videos = await self._video_reader.list_videos(
             workspace_id=workspace_id, channel_id=channel_id
         )

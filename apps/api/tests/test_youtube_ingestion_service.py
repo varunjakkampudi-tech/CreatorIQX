@@ -40,7 +40,9 @@ class FakeConnectionStore:
     async def list_channels(self, workspace_id: uuid.UUID) -> list[object]:
         raise NotImplementedError
 
-    async def get_active_connection(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID) -> ActiveConnection:
+    async def get_active_connection(
+        self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID
+    ) -> ActiveConnection:
         return self.active_connection
 
     async def update_access_token(self, **kwargs: object) -> None:
@@ -49,7 +51,9 @@ class FakeConnectionStore:
     async def disconnect(self, **kwargs: object) -> None:
         raise NotImplementedError
 
-    async def update_channel_stats(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID, channel: ChannelInfo) -> None:
+    async def update_channel_stats(
+        self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID, channel: ChannelInfo
+    ) -> None:
         self.channel_updates.append(channel)
 
 
@@ -57,7 +61,9 @@ class FakeConnectionStore:
 class FakeVideoStore:
     upserted: list[VideoStats] = field(default_factory=list)
 
-    async def upsert_videos(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID, videos: list[VideoStats]) -> None:
+    async def upsert_videos(
+        self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID, videos: list[VideoStats]
+    ) -> None:
         self.upserted.extend(videos)
 
     async def list_videos(self, **kwargs: object) -> list[object]:
@@ -74,11 +80,20 @@ class FakeDataApiClient:
     async def get_own_channel(self, access_token: str, *, workspace_id: uuid.UUID) -> ChannelInfo:
         return self.channel_info
 
-    async def list_uploads(self, access_token: str, *, workspace_id: uuid.UUID, uploads_playlist_id: str, limit: int) -> list[str]:
+    async def list_uploads(
+        self,
+        access_token: str,
+        *,
+        workspace_id: uuid.UUID,
+        uploads_playlist_id: str,
+        limit: int,
+    ) -> list[str]:
         self.list_uploads_calls += 1
         return self.video_ids[:limit]
 
-    async def list_video_stats(self, access_token: str, *, workspace_id: uuid.UUID, video_ids: list[str]) -> list[VideoStats]:
+    async def list_video_stats(
+        self, access_token: str, *, workspace_id: uuid.UUID, video_ids: list[str]
+    ) -> list[VideoStats]:
         return [self.stats_by_id[vid] for vid in video_ids]
 
 
@@ -87,7 +102,9 @@ class FakeQuotaLedger:
     reservations: list[tuple[str, int]] = field(default_factory=list)
     exhausted_after: int | None = None
 
-    async def reserve(self, *, workspace_id: uuid.UUID, provider: str, endpoint: str, units: int) -> None:
+    async def reserve(
+        self, *, workspace_id: uuid.UUID, provider: str, endpoint: str, units: int
+    ) -> None:
         if self.exhausted_after is not None and len(self.reservations) >= self.exhausted_after:
             raise QuotaExhaustedError()
         self.reservations.append((endpoint, units))

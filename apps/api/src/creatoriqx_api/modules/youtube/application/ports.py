@@ -74,9 +74,7 @@ class ChannelConnectionStore(Protocol):
     ) -> ActiveConnection:
         """The live connection backing ``channel_id``, or raise ``ChannelNotConnectedError``."""
 
-    async def update_access_token(
-        self, *, connection_id: uuid.UUID, tokens: OAuthTokens
-    ) -> None:
+    async def update_access_token(self, *, connection_id: uuid.UUID, tokens: OAuthTokens) -> None:
         """Persist a freshly refreshed access token (and expiry) for this connection."""
 
     async def disconnect(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID) -> None:
@@ -127,7 +125,10 @@ class QuotaLedger(Protocol):
     async def reserve(
         self, *, workspace_id: uuid.UUID, provider: str, endpoint: str, units: int
     ) -> None:
-        """Reserve ``units``, or raise ``QuotaExhaustedError``. Also appends to the durable ledger."""
+        """Reserve ``units``, or raise ``QuotaExhaustedError``.
+
+        Also appends to the durable ledger.
+        """
 
 
 @dataclass(frozen=True, slots=True)

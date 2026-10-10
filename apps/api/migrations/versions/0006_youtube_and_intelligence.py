@@ -43,10 +43,16 @@ def upgrade() -> None:
         "channels",
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column("workspace_id", sa.Uuid(), nullable=False),
         sa.Column("youtube_channel_id", sa.String(length=64), nullable=False),
@@ -66,10 +72,16 @@ def upgrade() -> None:
         "oauth_connections",
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column("workspace_id", sa.Uuid(), nullable=False),
         sa.Column("channel_id", sa.Uuid(), nullable=False),
@@ -92,10 +104,16 @@ def upgrade() -> None:
         "channel_videos",
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column("workspace_id", sa.Uuid(), nullable=False),
         sa.Column("channel_id", sa.Uuid(), nullable=False),
@@ -122,7 +140,10 @@ def upgrade() -> None:
         "quota_ledger",
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column("workspace_id", sa.Uuid(), nullable=False),
         sa.Column("provider", sa.String(length=32), nullable=False),
@@ -135,7 +156,10 @@ def upgrade() -> None:
         "recommendations",
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column("workspace_id", sa.Uuid(), nullable=False),
         sa.Column("channel_id", sa.Uuid(), nullable=True),

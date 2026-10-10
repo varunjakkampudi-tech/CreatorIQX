@@ -22,11 +22,11 @@ from creatoriqx_api.modules.youtube.application.ports import (
     VideoStats,
 )
 from creatoriqx_api.modules.youtube.domain.connection import (
+    PROVIDER_GOOGLE_YOUTUBE,
     ChannelInfo,
     ConnectedChannel,
     ConnectionStatus,
     OAuthTokens,
-    PROVIDER_GOOGLE_YOUTUBE,
 )
 from creatoriqx_api.modules.youtube.domain.errors import ChannelNotConnectedError
 from creatoriqx_api.modules.youtube.infrastructure.tables import (
@@ -41,9 +41,7 @@ from creatoriqx_api.platform.database import session_scope
 class SqlChannelConnectionStore:
     """Persists channels and their OAuth connections (spec §7)."""
 
-    def __init__(
-        self, factory: async_sessionmaker[AsyncSession], cipher: TokenCipher
-    ) -> None:
+    def __init__(self, factory: async_sessionmaker[AsyncSession], cipher: TokenCipher) -> None:
         self._factory = factory
         self._cipher = cipher
 
@@ -64,7 +62,9 @@ class SqlChannelConnectionStore:
             )
             row = existing.scalar_one_or_none()
             if row is None:
-                row = Channel(workspace_id=workspace_id, youtube_channel_id=channel.youtube_channel_id)
+                row = Channel(
+                    workspace_id=workspace_id, youtube_channel_id=channel.youtube_channel_id
+                )
                 session.add(row)
             _apply_channel_info(row, channel)
             row.last_synced_at = datetime.now(UTC)
@@ -155,9 +155,7 @@ class SqlChannelConnectionStore:
                 refresh_token=refresh_token,
             )
 
-    async def update_access_token(
-        self, *, connection_id: uuid.UUID, tokens: OAuthTokens
-    ) -> None:
+    async def update_access_token(self, *, connection_id: uuid.UUID, tokens: OAuthTokens) -> None:
         async with session_scope(self._factory) as session:
             result = await session.execute(
                 select(OAuthConnection).where(OAuthConnection.id == connection_id)

@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from creatoriqx_api.modules.intelligence.domain.errors import RecommendationNotFoundError
 from creatoriqx_api.modules.intelligence.domain.recommendation import (
     EvidenceStrength,
     NewRecommendation,
@@ -15,7 +16,6 @@ from creatoriqx_api.modules.intelligence.domain.recommendation import (
     RecommendationStatus,
     RecommendationType,
 )
-from creatoriqx_api.modules.intelligence.domain.errors import RecommendationNotFoundError
 from creatoriqx_api.modules.intelligence.infrastructure.tables import RecommendationRow
 from creatoriqx_api.platform.database import session_scope
 

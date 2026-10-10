@@ -39,16 +39,14 @@ class HttpYouTubeDataApiClient:
     def __init__(self, *, timeout_seconds: float = 10.0) -> None:
         self._timeout_seconds = timeout_seconds
 
-    async def get_own_channel(
-        self, access_token: str, *, workspace_id: uuid.UUID
-    ) -> ChannelInfo:
+    async def get_own_channel(self, access_token: str, *, workspace_id: uuid.UUID) -> ChannelInfo:
         data = await self._get(
             access_token,
             workspace_id=workspace_id,
             path="channels",
             params={"part": "snippet,statistics,contentDetails", "mine": "true"},
         )
-        items = data.get("items", [])
+        items = _list_of_dicts(data, "items")
         if not items:
             raise YouTubeApiError(detail="channels.list(mine=true) returned no channel")
         return _channel_info_from_item(items[0])
@@ -74,11 +72,11 @@ class HttpYouTubeDataApiClient:
             data = await self._get(
                 access_token, workspace_id=workspace_id, path="playlistItems", params=params
             )
-            for item in data.get("items", []):
-                video_id = item.get("contentDetails", {}).get("videoId")
+            for item in _list_of_dicts(data, "items"):
+                video_id = _str_or_none(_dict_get(item, "contentDetails").get("videoId"))
                 if video_id:
                     video_ids.append(video_id)
-            page_token = data.get("nextPageToken")
+            page_token = _str_or_none(data.get("nextPageToken"))
             if not page_token:
                 break
         return video_ids[:limit]
@@ -97,7 +95,7 @@ class HttpYouTubeDataApiClient:
                 "id": ",".join(video_ids),
             },
         )
-        return [_video_stats_from_item(item) for item in data.get("items", [])]
+        return [_video_stats_from_item(item) for item in _list_of_dicts(data, "items")]
 
     async def _get(
         self, access_token: str, *, workspace_id: uuid.UUID, path: str, params: dict[str, str]
@@ -122,31 +120,50 @@ class HttpYouTubeDataApiClient:
             raise YouTubeApiError(
                 detail=f"YouTube API {path} returned {resp.status_code}: {resp.text[:200]}"
             )
-        return resp.json()
+        body = resp.json()
+        return body if isinstance(body, dict) else {}
+
+
+def _list_of_dicts(container: dict[str, object], key: str) -> list[dict[str, object]]:
+    """``container.get(key, [])`` narrowed to a list of dicts, for untyped JSON."""
+    value = container.get(key, [])
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
+
+
+def _dict_get(container: dict[str, object], key: str) -> dict[str, object]:
+    """``container.get(key, {})`` narrowed back to a dict, for untyped JSON."""
+    value = container.get(key, {})
+    return value if isinstance(value, dict) else {}
+
+
+def _str_or_none(value: object) -> str | None:
+    return value if isinstance(value, str) else None
 
 
 def _channel_info_from_item(item: dict[str, object]) -> ChannelInfo:
-    snippet = item.get("snippet", {})
-    statistics = item.get("statistics", {})
-    content_details = item.get("contentDetails", {})
-    related_playlists = content_details.get("relatedPlaylists", {})
-    thumbnails = snippet.get("thumbnails", {})
-    default_thumbnail = thumbnails.get("default", {})
+    snippet = _dict_get(item, "snippet")
+    statistics = _dict_get(item, "statistics")
+    content_details = _dict_get(item, "contentDetails")
+    related_playlists = _dict_get(content_details, "relatedPlaylists")
+    thumbnails = _dict_get(snippet, "thumbnails")
+    default_thumbnail = _dict_get(thumbnails, "default")
     return ChannelInfo(
         youtube_channel_id=str(item["id"]),
         title=str(snippet.get("title", "")),
-        thumbnail_url=default_thumbnail.get("url"),
+        thumbnail_url=_str_or_none(default_thumbnail.get("url")),
         subscriber_count=_maybe_int(statistics.get("subscriberCount")),
         view_count=_maybe_int(statistics.get("viewCount")),
         video_count=_maybe_int(statistics.get("videoCount")),
-        uploads_playlist_id=related_playlists.get("uploads"),
+        uploads_playlist_id=_str_or_none(related_playlists.get("uploads")),
     )
 
 
 def _video_stats_from_item(item: dict[str, object]) -> VideoStats:
-    snippet = item.get("snippet", {})
-    statistics = item.get("statistics", {})
-    content_details = item.get("contentDetails", {})
+    snippet = _dict_get(item, "snippet")
+    statistics = _dict_get(item, "statistics")
+    content_details = _dict_get(item, "contentDetails")
     published_at_raw = snippet.get("publishedAt")
     return VideoStats(
         youtube_video_id=str(item["id"]),
@@ -161,12 +178,18 @@ def _video_stats_from_item(item: dict[str, object]) -> VideoStats:
 
 
 def _maybe_int(value: object) -> int | None:
-    if value is None:
+    # YouTube's statistics fields arrive as JSON strings (e.g. "12345"), never
+    # as numbers - narrow explicitly rather than calling int() on `object`.
+    if isinstance(value, bool):
         return None
-    try:
-        return int(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
 
 
 def _parse_timestamp(raw: object) -> datetime:

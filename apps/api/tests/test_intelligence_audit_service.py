@@ -23,7 +23,9 @@ _CHANNEL = uuid.uuid4()
 class FakeVideoReader:
     videos: list[AuditVideo] = field(default_factory=list)
 
-    async def list_videos(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID) -> list[AuditVideo]:
+    async def list_videos(
+        self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID
+    ) -> list[AuditVideo]:
         return self.videos
 
 

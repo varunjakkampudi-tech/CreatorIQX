@@ -96,7 +96,11 @@ class TestUploadGap:
         assert "After the gap" in gaps[0].evidence
 
     def test_no_finding_when_gaps_are_short(self) -> None:
-        videos = [_video("a", days_after_base=0), _video("b", days_after_base=2), _video("c", days_after_base=4)]
+        videos = [
+            _video("a", days_after_base=0),
+            _video("b", days_after_base=2),
+            _video("c", days_after_base=4),
+        ]
         result = run_audit(videos)
         assert not [f for f in result.findings if f.kind == "upload_gap"]
 

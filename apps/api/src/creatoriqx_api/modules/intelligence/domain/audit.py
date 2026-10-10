@@ -176,7 +176,7 @@ def _upload_gap_findings(
             summary=f"A {longest_gap}-day gap between uploads was found",
             evidence=(
                 f'Between "{ordered[gap_index].title}" '
-                f'({ordered[gap_index].published_at.date()}) and '
+                f"({ordered[gap_index].published_at.date()}) and "
                 f'"{ordered[gap_index + 1].title}" '
                 f"({ordered[gap_index + 1].published_at.date()})"
             ),
@@ -187,18 +187,12 @@ def _upload_gap_findings(
     ]
 
 
-def _quick_win_findings(
-    videos: list[AuditVideo], strength: EvidenceStrength
-) -> list[AuditFinding]:
+def _quick_win_findings(videos: list[AuditVideo], strength: EvidenceStrength) -> list[AuditFinding]:
     """Videos with real views but a comment count of zero: a cheap, visible fix
     (ask a question in a pinned comment, reply to existing engagement) that
     doesn't require new content - a "quick win" per spec feature #2.
     """
-    candidates = [
-        v
-        for v in videos
-        if (v.view_count or 0) > 100 and (v.comment_count or 0) == 0
-    ]
+    candidates = [v for v in videos if (v.view_count or 0) > 100 and (v.comment_count or 0) == 0]
     if not candidates:
         return []
     candidate = max(candidates, key=lambda v: v.view_count or 0)
