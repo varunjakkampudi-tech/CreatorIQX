@@ -25,6 +25,35 @@ erDiagram
         uuid id "PK"
         timestamp created_at
     }
+    channel_videos {
+        uuid workspace_id "UK"
+        uuid channel_id "FK, UK"
+        string youtube_video_id "UK"
+        string title
+        text description
+        timestamp published_at
+        int duration_seconds
+        int view_count
+        int like_count
+        int comment_count
+        uuid id "PK"
+        timestamp created_at
+        timestamp updated_at
+    }
+    channels {
+        uuid workspace_id "UK"
+        string youtube_channel_id "UK"
+        string title
+        string thumbnail_url
+        int subscriber_count
+        int view_count
+        int video_count
+        string uploads_playlist_id
+        timestamp last_synced_at
+        uuid id "PK"
+        timestamp created_at
+        timestamp updated_at
+    }
     idempotency_keys {
         uuid workspace_id "UK"
         string key "UK"
@@ -42,10 +71,50 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+    oauth_connections {
+        uuid workspace_id "UK"
+        uuid channel_id "FK, UK"
+        string provider
+        uuid connected_by_user_id
+        text access_token_encrypted
+        timestamp access_token_expires_at
+        text refresh_token_encrypted
+        jsonb scopes
+        string status
+        uuid id "PK"
+        timestamp created_at
+        timestamp updated_at
+    }
     outbox_events {
         string event_type
         jsonb payload
         timestamp published_at
+        uuid id "PK"
+        timestamp created_at
+    }
+    quota_ledger {
+        timestamp created_at
+        uuid workspace_id
+        string provider
+        string endpoint
+        int units
+        date usage_date
+        uuid id "PK"
+    }
+    recommendations {
+        uuid workspace_id
+        uuid channel_id "FK"
+        uuid video_id
+        string type
+        string source
+        text recommendation
+        text evidence
+        float confidence
+        string evidence_strength
+        int sample_size
+        string status
+        timestamp accepted_at
+        timestamp dismissed_at
         uuid id "PK"
         timestamp created_at
     }
@@ -72,8 +141,11 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+    channels ||--o{ channel_videos : "channel_id"
     users ||--o{ memberships : "user_id"
     workspaces ||--o{ memberships : "workspace_id"
+    channels ||--o{ oauth_connections : "channel_id"
+    channels ||--o{ recommendations : "channel_id"
 ```
 
 ## Table ownership
@@ -84,9 +156,14 @@ read it only through that module's public interface or domain events.
 | Table | Owning module | Tenant-scoped (`workspace_id`) |
 |---|---|---|
 | `audit_log` | audit | yes |
+| `channel_videos` | youtube | yes |
+| `channels` | youtube | yes |
 | `idempotency_keys` | jobs | yes |
 | `memberships` | workspaces | yes |
+| `oauth_connections` | youtube | yes |
 | `outbox_events` | jobs | no |
+| `quota_ledger` | youtube | yes |
+| `recommendations` | intelligence | yes |
 | `usage_events` | telemetry | yes |
 | `users` | identity | no |
 | `workspaces` | workspaces | no |

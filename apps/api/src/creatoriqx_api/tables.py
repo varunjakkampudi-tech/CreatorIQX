@@ -8,8 +8,18 @@ from __future__ import annotations
 
 from creatoriqx_api.modules.audit.infrastructure import tables as _audit
 from creatoriqx_api.modules.identity.infrastructure import tables as _identity
+from creatoriqx_api.modules.intelligence.infrastructure import tables as _intelligence
 from creatoriqx_api.modules.jobs.infrastructure import tables as _jobs
 from creatoriqx_api.modules.telemetry.infrastructure import tables as _telemetry
 from creatoriqx_api.modules.workspaces.infrastructure import tables as _workspaces
+from creatoriqx_api.modules.youtube.infrastructure import tables as _youtube
 
-__all__ = ["_audit", "_identity", "_jobs", "_telemetry", "_workspaces"]
+__all__ = [
+    "_audit",
+    "_identity",
+    "_intelligence",
+    "_jobs",
+    "_telemetry",
+    "_workspaces",
+    "_youtube",
+]

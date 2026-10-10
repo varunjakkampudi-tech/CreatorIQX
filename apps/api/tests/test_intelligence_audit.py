@@ -84,8 +84,8 @@ class TestBestAndWorstVideo:
 class TestUploadGap:
     def test_detects_a_long_gap(self) -> None:
         videos = [
-            _video("a", days_after_base=0, title="Before the gap"),
-            _video("b", days_after_base=5),
+            _video("a", days_after_base=0, title="Earliest video"),
+            _video("b", days_after_base=5, title="Before the gap"),
             _video("c", days_after_base=90, title="After the gap"),
         ]
         result = run_audit(videos)
