@@ -58,9 +58,7 @@ def upgrade() -> None:
         sa.Column("chapter_version_id", sa.Uuid(), nullable=True),
         sa.Column("thumbnail_variant_id", sa.Uuid(), nullable=True),
         sa.Column("disclosure_altered", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column(
-            "disclosure_synthetic", sa.Boolean(), nullable=False, server_default=sa.false()
-        ),
+        sa.Column("disclosure_synthetic", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column("scheduled_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("approved_by", sa.Uuid(), nullable=False),
         sa.Column(
@@ -120,9 +118,7 @@ def upgrade() -> None:
         sa.Column("error_details", sa.Text(), nullable=True),
         sa.Column("quota_cost", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("remote_etag", sa.String(length=200), nullable=True),
-        sa.Column(
-            "readback_verified", sa.Boolean(), nullable=False, server_default=sa.false()
-        ),
+        sa.Column("readback_verified", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column("finished_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_sync_operations")),
         sa.ForeignKeyConstraint(
@@ -145,9 +141,7 @@ def upgrade() -> None:
             "fields", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="{}"
         ),
         sa.Column("privacy_status", sa.String(length=20), nullable=False),
-        sa.Column(
-            "has_been_published", sa.Boolean(), nullable=False, server_default=sa.false()
-        ),
+        sa.Column("has_been_published", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column(
             "captured_at",
             sa.DateTime(timezone=True),
@@ -216,9 +210,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute(
-        "DROP TRIGGER IF EXISTS publish_snapshots_block_update_delete ON publish_snapshots"
-    )
+    op.execute("DROP TRIGGER IF EXISTS publish_snapshots_block_update_delete ON publish_snapshots")
     op.execute("DROP FUNCTION IF EXISTS publish_snapshots_insert_only()")
     op.execute("GRANT UPDATE, DELETE ON publish_snapshots TO creatoriqx_app")
 
