@@ -290,8 +290,8 @@ erDiagram
     channels ||--o{ recommendations : "channel_id"
     youtube_video_links ||--o{ remote_snapshots : "video_link_id"
     script_versions ||--o{ script_versions : "parent_version_id"
-    youtube_video_links ||--o{ sync_operations : "video_link_id"
     publish_snapshots ||--o{ sync_operations : "applied_snapshot_id"
+    youtube_video_links ||--o{ sync_operations : "video_link_id"
     transcripts ||--o{ transcript_segments : "transcript_id"
     transcripts ||--o{ transcripts : "parent_transcript_id"
     plans ||--o{ videos : "plan_id"
@@ -340,4 +340,4 @@ relay worker).
 - `outbox_events`
 - `users`
 - `workspaces`
-- `youtube_capabilities` (one Google Cloud project per deployment, not per workspace - ADR 0007/0015)
+- `youtube_capabilities`
