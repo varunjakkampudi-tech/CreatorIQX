@@ -92,6 +92,46 @@ class Settings(BaseSettings):
         default=60, gt=0, description="Window the bucket fully refills over"
     )
 
+    # YouTube OAuth connection (Phase 1A): a separate OAuth 2.0 flow from
+    # login (spec §10), never the same client. Read-only scope only in
+    # Phase 1A; write/upload scopes are requested only when a later phase
+    # enables the capability that needs them (spec §3 capability model).
+    youtube_oauth_client_id: str = Field(
+        default="",
+        validation_alias="YOUTUBE_OAUTH_CLIENT_ID",
+        description="Google OAuth client ID for the YouTube connection (separate from login)",
+    )
+    youtube_oauth_client_secret: SecretStr = Field(
+        default=SecretStr(""),
+        validation_alias="YOUTUBE_OAUTH_CLIENT_SECRET",
+        description="Google OAuth client secret for the YouTube connection",
+    )
+    youtube_oauth_flow_ttl_seconds: int = Field(
+        default=600, ge=60, le=900, description="How long a started YouTube connect may take"
+    )
+
+    # Token encryption at rest (spec §10: AES-256-GCM, envelope encryption,
+    # key id for rotation). Base64-encoded 256-bit key. A real value is
+    # required only once a YouTube connection is actually attempted - see
+    # ``TokenCipherDep``'s own check - so tests and routes that never touch
+    # it may leave this at its empty default.
+    token_encryption_key_id: str = Field(
+        default="k1", description="Identifies which key encrypted a stored token, for rotation"
+    )
+    token_encryption_key: SecretStr = Field(
+        default=SecretStr(""),
+        validation_alias="TOKEN_ENCRYPTION_KEY",
+        description="Base64-encoded 256-bit AES-GCM key for encrypting OAuth tokens at rest",
+    )
+
+    # Quota ledger (spec §6, §7): Redis holds the live per-workspace-per-day
+    # counter; every call also appends to the durable Postgres ledger.
+    youtube_daily_quota_units: int = Field(
+        default=10_000,
+        gt=0,
+        description="Daily YouTube Data API quota units available per workspace",
+    )
+
     @property
     def allowed_emails_set(self) -> frozenset[str]:
         """Parse the comma-separated allow-list into a frozen set."""

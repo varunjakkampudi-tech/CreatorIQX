@@ -18,3 +18,22 @@ Allowed statuses: `available`, `restricted`, `unsupported`, `requires_audit`. Ve
 ## Evidence rule
 
 A status may change only in a commit that adds the verification date, the official source URL, the exact scopes, and notes from the actual project status. The same data is persisted in the `youtube_capabilities` table once it exists (Phase 1D).
+
+## Phase 1A: the read-only connection (not a write capability)
+
+Phase 1A's connection (`youtube` module, `GoogleYouTubeOAuthProvider`) requests only
+`https://www.googleapis.com/auth/youtube.readonly`, verified 2026-10-10 against
+the current YouTube Data API v3 OAuth 2.0 scopes documentation
+(https://developers.google.com/youtube/v3/guides/auth/installed-apps). This is
+not one of the write capabilities in the register above - it grants no write
+access at all, so it needs no audit and no `requires_audit` status. It reads,
+through `HttpYouTubeDataApiClient`:
+
+- `channels.list(mine=true, part=snippet,statistics,contentDetails)` - the connected channel's own identity, stats and uploads playlist id;
+- `playlistItems.list(playlistId=<uploads>, part=contentDetails)` - discovers videos via the uploads playlist, never `search.list` (spec §3 explicit requirement);
+- `videos.list(id=<...>, part=snippet,contentDetails,statistics)` - up to 50 ids per call, for per-video metadata and stats.
+
+Quota costs for these three methods were assumed at 1 unit per call each
+(not independently re-verified against Google's current quota calculator
+this session - see OQ-18) and are reserved per call actually made, not per
+estimated page, by `ChannelIngestionService`.

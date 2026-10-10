@@ -106,3 +106,115 @@ def outbox_relay(limit: int = 50, correlation_id: str | None = None) -> dict[str
         relayed = asyncio.run(_default_relay().run_once(limit=limit))
         logger.info("outbox.relay.done", relayed=relayed)
         return {"relayed": relayed}
+
+
+def _build_youtube_ingestion_service() -> Any:
+    # Built per task invocation, same reasoning as _default_relay(): Celery
+    # imports this module to register tasks before Settings' required
+    # fields are necessarily available.
+    from creatoriqx_api.modules.youtube.infrastructure.quota_ledger import (
+        RedisPostgresQuotaLedger,
+    )
+    from creatoriqx_api.modules.youtube.infrastructure.sql_connection_store import (
+        SqlChannelConnectionStore,
+        SqlChannelVideoStore,
+    )
+    from creatoriqx_api.modules.youtube.infrastructure.youtube_data_api import (
+        HttpYouTubeDataApiClient,
+    )
+    from creatoriqx_api.modules.youtube.application.ingestion_service import (
+        ChannelIngestionService,
+    )
+    from creatoriqx_api.platform.crypto import TokenCipher, load_key
+    from redis.asyncio import Redis
+
+    settings = get_settings()
+    factory: async_sessionmaker[Any] = create_session_factory(create_engine(settings))
+    cipher = TokenCipher(
+        settings.token_encryption_key_id, load_key(settings.token_encryption_key.get_secret_value())
+    )
+    redis_client = Redis.from_url(settings.redis_url.get_secret_value())
+    return ChannelIngestionService(
+        connection_store=SqlChannelConnectionStore(factory, cipher),
+        video_store=SqlChannelVideoStore(factory),
+        data_api_client=HttpYouTubeDataApiClient(),
+        quota_ledger=RedisPostgresQuotaLedger(
+            redis_client=redis_client,
+            session_factory=factory,
+            daily_cap=settings.youtube_daily_quota_units,
+        ),
+    )
+
+
+@celery_app.task(name="youtube.ingest_channel")
+def youtube_ingest_channel(
+    payload: dict[str, Any] | None = None, correlation_id: str | None = None
+) -> dict[str, Any]:
+    """Refresh one connected channel's own data from the YouTube Data API (spec §3).
+
+    At-least-once delivery: ``ChannelIngestionService.ingest`` is idempotent
+    (channel stats and video rows are upserted, never appended), so a
+    redelivered task is safe to run again.
+    """
+    import asyncio
+    import uuid
+
+    payload = payload or {}
+    with structlog.contextvars.bound_contextvars(correlation_id=correlation_id):
+        workspace_id = uuid.UUID(payload["workspace_id"])
+        channel_id = uuid.UUID(payload["channel_id"])
+        logger.info("youtube.ingest_channel.start", workspace_id=str(workspace_id))
+        service = _build_youtube_ingestion_service()
+        ingested = asyncio.run(
+            service.ingest(workspace_id=workspace_id, channel_id=channel_id)
+        )
+        logger.info("youtube.ingest_channel.done", ingested=ingested)
+        return {"ingested": ingested}
+
+
+def _build_channel_audit_service() -> Any:
+    from creatoriqx_api.modules.intelligence.application.audit_service import (
+        ChannelAuditService,
+    )
+    from creatoriqx_api.modules.intelligence.infrastructure.sql_recommendation_store import (
+        SqlRecommendationStore,
+    )
+    from creatoriqx_api.modules.intelligence.infrastructure.youtube_video_reader import (
+        YouTubeChannelVideoReader,
+    )
+    from creatoriqx_api.modules.youtube.infrastructure.sql_connection_store import (
+        SqlChannelVideoStore,
+    )
+
+    settings = get_settings()
+    factory: async_sessionmaker[Any] = create_session_factory(create_engine(settings))
+    return ChannelAuditService(
+        video_reader=YouTubeChannelVideoReader(SqlChannelVideoStore(factory)),
+        recommendation_store=SqlRecommendationStore(factory),
+    )
+
+
+@celery_app.task(name="intelligence.run_audit")
+def intelligence_run_audit(
+    payload: dict[str, Any] | None = None, correlation_id: str | None = None
+) -> dict[str, Any]:
+    """Run a channel audit and persist its findings as recommendations (spec §4 feature #2).
+
+    Enqueued after ``youtube.ingest_channel`` completes (or run on demand via
+    the API's own synchronous route); safe to run again, since each run
+    simply appends a fresh batch of recommendations.
+    """
+    import asyncio
+    import uuid
+
+    payload = payload or {}
+    with structlog.contextvars.bound_contextvars(correlation_id=correlation_id):
+        workspace_id = uuid.UUID(payload["workspace_id"])
+        channel_id = uuid.UUID(payload["channel_id"])
+        logger.info("intelligence.run_audit.start", workspace_id=str(workspace_id))
+        service = _build_channel_audit_service()
+        recommendations = asyncio.run(
+            service.run(workspace_id=workspace_id, channel_id=channel_id)
+        )
+        logger.info("intelligence.run_audit.done", count=len(recommendations))
+        return {"recommendation_count": len(recommendations)}

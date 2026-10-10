@@ -25,6 +25,14 @@ Unverified facts and pending decisions. Rule (spec §0.3): prefer official docum
 | OQ-10 | Do target browsers accept `Secure` and `__Host-` cookies on `http://localhost`? | Use them; if a target browser rejects them, fall back to local Caddy with `tls internal` | Browser docs (Chrome, Firefox, Safari secure-context rules) | P0-051 | Open |
 | OQ-11 | Which OIDC library (for example Authlib) best fits FastAPI with PKCE, nonce and JWKS validation, at its current version? | Choose only a maintained library with PKCE and ID token validation; record the version | Library docs and changelog | P0-050 | Open |
 
+## Phase 1A findings (2026-10-10)
+
+| ID | Question | Conservative assumption until verified | Source to check | Needed by | Status |
+|---|---|---|---|---|---|
+| OQ-18 | Exact YouTube Data API v3 quota costs for `channels.list`, `playlistItems.list`, `videos.list` | Assumed 1 unit each per call (the commonly documented `part`-based cost for these three read methods as of the quota calculator's published values) - `ChannelIngestionService` reserves 1 unit per call made, never per estimated page, so an under-estimate fails safe (reserves less than the true cost) rather than over-blocking | YouTube Data API v3 quota calculator | P1A-04, P1A-05 | Open - not independently re-verified against Google's current calculator this session; flagged rather than silently assumed correct |
+| OQ-19 | Does Google always return a `refresh_token` on `access_type=offline&prompt=consent` for a first-time connection? | Assumed yes when `prompt=consent` is forced (`GoogleYouTubeOAuthProvider.exchange_code` raises `YouTubeOAuthError` if one is missing, rather than silently storing a connection it can't refresh) | Google OAuth 2.0 for Web Server Applications docs | P1A-03 | Open - behavior reviewed against current docs, not yet exercised against a real consent screen |
+| OQ-20 | ADR 0009 describes a reconciliation step (rebuild the Redis quota counter from the Postgres ledger after a flush). Is this required for Phase 1A's PASS, or can it follow in a later ticket? | Not implemented in P1A-04; a Redis flush simply starts a fresh quota window early (fails open, not a security issue, just an honesty gap against the ADR's original text) | ADR 0009 | P1A-04 | Open - owner decision needed: accept the gap for now, or treat it as blocking before Phase 1A's gate |
+
 ## Environment findings (2026-10-08)
 
 | ID | Question | Conservative assumption until verified | Source to check | Needed by | Status |

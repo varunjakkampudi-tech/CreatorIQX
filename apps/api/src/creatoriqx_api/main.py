@@ -26,6 +26,15 @@ from creatoriqx_api.modules.identity.application.session_service import SessionS
 from creatoriqx_api.modules.identity.domain.session import SessionPolicy
 from creatoriqx_api.modules.identity.infrastructure.google_oidc import GoogleOIDCProvider
 from creatoriqx_api.modules.identity.infrastructure.key_value_store import RedisKeyValueStore
+from creatoriqx_api.modules.intelligence.api.audit import router as intelligence_router
+from creatoriqx_api.modules.intelligence.application.audit_service import ChannelAuditService
+from creatoriqx_api.modules.intelligence.infrastructure.sql_recommendation_store import (
+    SqlRecommendationStore,
+)
+from creatoriqx_api.modules.intelligence.infrastructure.youtube_video_reader import (
+    YouTubeChannelVideoReader,
+)
+from creatoriqx_api.modules.jobs.infrastructure.celery_task_queue import CeleryTaskQueue
 from creatoriqx_api.modules.workspaces.api.routes import router as workspaces_router
 from creatoriqx_api.modules.workspaces.application.access_service import WorkspaceAccessService
 from creatoriqx_api.modules.workspaces.application.bootstrap_service import (
@@ -35,6 +44,21 @@ from creatoriqx_api.modules.workspaces.infrastructure.sql_access_store import (
     SqlWorkspaceAccessStore,
 )
 from creatoriqx_api.modules.workspaces.infrastructure.sql_store import SqlPersonalWorkspaceStore
+from creatoriqx_api.modules.youtube.api.connect import router as youtube_connect_router
+from creatoriqx_api.modules.youtube.api.ingestion import router as youtube_ingestion_router
+from creatoriqx_api.modules.youtube.application.connection_service import (
+    ChannelConnectionService,
+)
+from creatoriqx_api.modules.youtube.infrastructure.google_oauth import GoogleYouTubeOAuthProvider
+from creatoriqx_api.modules.youtube.infrastructure.quota_ledger import RedisPostgresQuotaLedger
+from creatoriqx_api.modules.youtube.infrastructure.sql_connection_store import (
+    SqlChannelConnectionStore,
+    SqlChannelVideoStore,
+)
+from creatoriqx_api.modules.youtube.infrastructure.youtube_data_api import (
+    HttpYouTubeDataApiClient,
+)
+from creatoriqx_api.platform.crypto import TokenCipher, load_key
 from creatoriqx_api.platform.database import create_engine, create_session_factory
 from creatoriqx_api.platform.errors import install_error_handlers
 from creatoriqx_api.platform.health import HealthCheck, PostgresCheck, RedisCheck, run_checks
@@ -106,6 +130,7 @@ def create_app(
 
     _wire_sessions(app, settings, redis)
     _wire_workspaces(app, engine)
+    app.state.task_queue = CeleryTaskQueue()
 
     if settings.oidc_client_id:
         provider = GoogleOIDCProvider(
@@ -117,6 +142,12 @@ def create_app(
             allowed_emails=settings.allowed_emails_set,
         )
         app.include_router(auth_router, prefix=API_V1_PREFIX)
+
+    if settings.youtube_oauth_client_id:
+        _wire_youtube(app, settings, engine, redis)
+        app.include_router(youtube_connect_router, prefix=API_V1_PREFIX)
+        app.include_router(youtube_ingestion_router, prefix=API_V1_PREFIX)
+        app.include_router(intelligence_router, prefix=API_V1_PREFIX)
 
     @app.get("/healthz", tags=["health"], summary="Liveness: the process is up")
     async def healthz() -> JSONResponse:
@@ -150,6 +181,45 @@ def _wire_workspaces(app: FastAPI, engine: AsyncEngine) -> None:
     app.state.session_factory = factory
     app.state.bootstrap_service = WorkspaceBootstrapService(SqlPersonalWorkspaceStore(factory))
     app.state.workspace_access_service = WorkspaceAccessService(SqlWorkspaceAccessStore(factory))
+
+
+def _wire_youtube(app: FastAPI, settings: Settings, engine: AsyncEngine, redis: Redis) -> None:
+    """The youtube connection/ingestion and intelligence/audit services (Phase 1A).
+
+    Gated on ``youtube_oauth_client_id`` being set, same convention as login's
+    ``oidc_client_id`` gate: a deployment that hasn't configured the YouTube
+    OAuth client yet runs without these routes rather than crash-looping on
+    missing config, and a required-key check only happens once a connection
+    is actually attempted (``TokenCipher`` is built here, not deferred,
+    because a misconfigured key should fail fast at startup, not mid-request).
+    """
+    factory = create_session_factory(engine)
+    cipher = TokenCipher(
+        settings.token_encryption_key_id, load_key(settings.token_encryption_key.get_secret_value())
+    )
+    connection_store = SqlChannelConnectionStore(factory, cipher)
+    video_store = SqlChannelVideoStore(factory)
+    oauth_provider = GoogleYouTubeOAuthProvider(
+        client_id=settings.youtube_oauth_client_id,
+        client_secret=settings.youtube_oauth_client_secret.get_secret_value(),
+    )
+    data_api_client = HttpYouTubeDataApiClient()
+
+    app.state.youtube_connection_service = ChannelConnectionService(
+        oauth_provider=oauth_provider,
+        data_api_client=data_api_client,
+        store=connection_store,
+        state_store=app.state.key_value_store,
+        flow_ttl_seconds=settings.youtube_oauth_flow_ttl_seconds,
+    )
+    app.state.quota_ledger = RedisPostgresQuotaLedger(
+        redis_client=redis, session_factory=factory, daily_cap=settings.youtube_daily_quota_units
+    )
+    app.state.recommendation_store = SqlRecommendationStore(factory)
+    app.state.channel_audit_service = ChannelAuditService(
+        video_reader=YouTubeChannelVideoReader(video_store),
+        recommendation_store=app.state.recommendation_store,
+    )
 
 
 def _wire_sessions(app: FastAPI, settings: Settings, redis: Redis) -> None:
