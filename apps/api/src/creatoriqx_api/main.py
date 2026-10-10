@@ -35,6 +35,14 @@ from creatoriqx_api.modules.intelligence.infrastructure.youtube_video_reader imp
     YouTubeChannelVideoReader,
 )
 from creatoriqx_api.modules.jobs.infrastructure.celery_task_queue import CeleryTaskQueue
+from creatoriqx_api.modules.planning.api.planner import router as planner_router
+from creatoriqx_api.modules.planning.api.videos import router as videos_router
+from creatoriqx_api.modules.planning.application.planner_service import PlannerService
+from creatoriqx_api.modules.planning.application.video_lifecycle_service import (
+    VideoLifecycleService,
+)
+from creatoriqx_api.modules.planning.infrastructure.sql_plan_store import SqlPlanStore
+from creatoriqx_api.modules.planning.infrastructure.sql_video_store import SqlVideoStore
 from creatoriqx_api.modules.workspaces.api.routes import router as workspaces_router
 from creatoriqx_api.modules.workspaces.application.access_service import WorkspaceAccessService
 from creatoriqx_api.modules.workspaces.application.bootstrap_service import (
@@ -130,6 +138,9 @@ def create_app(
 
     _wire_sessions(app, settings, redis)
     _wire_workspaces(app, engine)
+    _wire_planning(app, engine)
+    app.include_router(planner_router, prefix=API_V1_PREFIX)
+    app.include_router(videos_router, prefix=API_V1_PREFIX)
     app.state.task_queue = CeleryTaskQueue()
 
     if settings.oidc_client_id:
@@ -181,6 +192,19 @@ def _wire_workspaces(app: FastAPI, engine: AsyncEngine) -> None:
     app.state.session_factory = factory
     app.state.bootstrap_service = WorkspaceBootstrapService(SqlPersonalWorkspaceStore(factory))
     app.state.workspace_access_service = WorkspaceAccessService(SqlWorkspaceAccessStore(factory))
+
+
+def _wire_planning(app: FastAPI, engine: AsyncEngine) -> None:
+    """The planner and video-lifecycle services (Phase 1B). No feature flag:
+
+    unlike YouTube connect/ingestion, the planner and video board need no
+    external credentials, so they are always wired, like workspaces.
+    """
+    factory = create_session_factory(engine)
+    plan_store = SqlPlanStore(factory)
+    video_store = SqlVideoStore(factory)
+    app.state.planner_service = PlannerService(plan_store, video_store)
+    app.state.video_lifecycle_service = VideoLifecycleService(video_store)
 
 
 def _wire_youtube(app: FastAPI, settings: Settings, engine: AsyncEngine, redis: Redis) -> None:

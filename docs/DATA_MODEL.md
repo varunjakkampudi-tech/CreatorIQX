@@ -92,6 +92,17 @@ erDiagram
         uuid id "PK"
         timestamp created_at
     }
+    plans {
+        uuid workspace_id
+        string title
+        text notes
+        string series
+        date scheduled_date
+        uuid promoted_video_id
+        uuid id "PK"
+        timestamp created_at
+        timestamp updated_at
+    }
     quota_ledger {
         timestamp created_at
         uuid workspace_id
@@ -135,6 +146,16 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+    videos {
+        uuid workspace_id
+        uuid channel_id
+        uuid plan_id "FK"
+        string title
+        string status
+        uuid id "PK"
+        timestamp created_at
+        timestamp updated_at
+    }
     workspaces {
         string name
         uuid id "PK"
@@ -146,6 +167,7 @@ erDiagram
     workspaces ||--o{ memberships : "workspace_id"
     channels ||--o{ oauth_connections : "channel_id"
     channels ||--o{ recommendations : "channel_id"
+    plans ||--o{ videos : "plan_id"
 ```
 
 ## Table ownership
@@ -162,10 +184,12 @@ read it only through that module's public interface or domain events.
 | `memberships` | workspaces | yes |
 | `oauth_connections` | youtube | yes |
 | `outbox_events` | jobs | no |
+| `plans` | planning | yes |
 | `quota_ledger` | youtube | yes |
 | `recommendations` | intelligence | yes |
 | `usage_events` | telemetry | yes |
 | `users` | identity | no |
+| `videos` | planning | yes |
 | `workspaces` | workspaces | no |
 
 ## Global (non-tenant) tables
