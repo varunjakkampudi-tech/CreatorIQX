@@ -128,6 +128,21 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+    publish_snapshots {
+        uuid workspace_id
+        uuid video_id
+        uuid script_version_id
+        uuid metadata_version_id
+        uuid chapter_version_id
+        uuid thumbnail_variant_id
+        boolean disclosure_altered
+        boolean disclosure_synthetic
+        timestamp scheduled_at
+        uuid approved_by
+        timestamp approved_at
+        uuid id "PK"
+        timestamp created_at
+    }
     quota_ledger {
         timestamp created_at
         uuid workspace_id
@@ -151,21 +166,6 @@ erDiagram
         string status
         timestamp accepted_at
         timestamp dismissed_at
-        uuid id "PK"
-        timestamp created_at
-    }
-    publish_snapshots {
-        uuid workspace_id
-        uuid video_id
-        uuid script_version_id
-        uuid metadata_version_id
-        uuid chapter_version_id
-        uuid thumbnail_variant_id
-        boolean disclosure_altered
-        boolean disclosure_synthetic
-        timestamp scheduled_at
-        uuid approved_by
-        timestamp approved_at
         uuid id "PK"
         timestamp created_at
     }
