@@ -40,16 +40,6 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
-    chapter_versions {
-        uuid workspace_id
-        uuid video_id
-        uuid transcript_id "FK"
-        jsonb chapters
-        uuid parent_version_id "FK"
-        boolean is_current
-        uuid id "PK"
-        timestamp created_at
-    }
     channels {
         uuid workspace_id "UK"
         string youtube_channel_id "UK"
@@ -63,6 +53,16 @@ erDiagram
         uuid id "PK"
         timestamp created_at
         timestamp updated_at
+    }
+    chapter_versions {
+        uuid workspace_id
+        uuid video_id
+        uuid transcript_id "FK"
+        jsonb chapters
+        uuid parent_version_id "FK"
+        boolean is_current
+        uuid id "PK"
+        timestamp created_at
     }
     idempotency_keys {
         uuid workspace_id "UK"
@@ -222,8 +222,8 @@ erDiagram
         timestamp updated_at
     }
     channels ||--o{ channel_videos : "channel_id"
-    transcripts ||--o{ chapter_versions : "transcript_id"
     chapter_versions ||--o{ chapter_versions : "parent_version_id"
+    transcripts ||--o{ chapter_versions : "transcript_id"
     users ||--o{ memberships : "user_id"
     workspaces ||--o{ memberships : "workspace_id"
     metadata_versions ||--o{ metadata_versions : "parent_version_id"
@@ -243,9 +243,9 @@ read it only through that module's public interface or domain events.
 | Table | Owning module | Tenant-scoped (`workspace_id`) |
 |---|---|---|
 | `audit_log` | audit | yes |
-| `chapter_versions` | content | yes |
 | `channel_videos` | youtube | yes |
 | `channels` | youtube | yes |
+| `chapter_versions` | content | yes |
 | `idempotency_keys` | jobs | yes |
 | `memberships` | workspaces | yes |
 | `metadata_versions` | content | yes |
