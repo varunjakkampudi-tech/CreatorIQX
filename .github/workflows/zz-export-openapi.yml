@@ -35,6 +35,9 @@ jobs:
       - name: Regenerate the OpenAPI document
         run: uv run python scripts/export_openapi.py
 
+      - name: Regenerate the data model ERD
+        run: uv run python scripts/generate_erd.py
+
       - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v7
@@ -52,10 +55,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add packages/api-client/openapi.json packages/api-client/src/schema.d.ts
+          git add packages/api-client/openapi.json packages/api-client/src/schema.d.ts docs/DATA_MODEL.md
           if git diff --cached --quiet; then
             echo "No change."
           else
-            git commit -m "chore: regenerate openapi.json and schema.d.ts (scratch, see zz-export-openapi)"
+            git commit -m "chore: regenerate openapi.json, schema.d.ts and DATA_MODEL.md (scratch, see zz-export-openapi)"
             git push
           fi
