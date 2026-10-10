@@ -34,6 +34,7 @@ from creatoriqx_api.modules.youtube.infrastructure.sql_connection_store import (
     SqlChannelConnectionStore,
 )
 from creatoriqx_api.platform.crypto import TokenCipher, generate_key, load_key
+from creatoriqx_api.platform.database import set_tenant_context
 
 pytestmark = pytest.mark.integration
 
@@ -138,6 +139,10 @@ def test_save_connection_succeeds_under_rls() -> None:
             await store.disconnect(workspace_id=workspace_id, channel_id=connected.id)
 
             async with factory() as cleanup:
+                # memberships/oauth_connections/channels are RLS-protected
+                # tenant tables (migration 0006) - the app role's queries on
+                # them need app.workspace_id set, even for this teardown.
+                await set_tenant_context(cleanup, workspace_id=workspace_id, user_id=user_id)
                 await cleanup.execute(
                     text("DELETE FROM memberships WHERE user_id = :u"), {"u": user_id}
                 )
