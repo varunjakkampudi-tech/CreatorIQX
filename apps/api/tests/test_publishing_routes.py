@@ -869,17 +869,24 @@ async def test_drift_resolution_rejects_an_invalid_mode(harness: Harness) -> Non
 
 async def test_drift_resolution_accepts_each_explicit_mode(harness: Harness) -> None:
     csrf = await _sign_in(harness.client, user_id=EDITOR_ID)
-    video = await _seed_video(harness.videos, status=VideoStatus.IN_REVIEW)
-    await harness.links.create(
-        NewYoutubeVideoLink(
-            workspace_id=WORKSPACE_ID,
-            video_id=video.id,
-            channel_id=CHANNEL_ID,
-            youtube_video_id="yt-video-1",
-        )
-    )
 
+    # A fresh linked video per mode: resolving "adopt_remote"/"overwrite_remote"
+    # moves the link's sync state linked -> pending_sync (YoutubeSyncService.
+    # resolve_drift), so re-resolving the *same* link a second time would be a
+    # pending_sync -> pending_sync transition, which the sync-state machine
+    # correctly refuses (spec §3's explicit, one-way drift resolution). Each
+    # mode therefore gets its own link, starting from the same "linked" state.
     for i, mode in enumerate(("ignore", "adopt_remote", "overwrite_remote")):
+        video = await _seed_video(harness.videos, status=VideoStatus.IN_REVIEW)
+        await harness.links.create(
+            NewYoutubeVideoLink(
+                workspace_id=WORKSPACE_ID,
+                video_id=video.id,
+                channel_id=CHANNEL_ID,
+                youtube_video_id=f"yt-video-drift-{i}",
+            )
+        )
+
         response = harness.client.post(
             f"/api/v1/videos/{video.id}/youtube/drift/resolve",
             json={"mode": mode},
