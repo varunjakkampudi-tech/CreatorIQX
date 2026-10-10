@@ -12,6 +12,7 @@ from creatoriqx_api.modules.identity.infrastructure import tables as _identity
 from creatoriqx_api.modules.intelligence.infrastructure import tables as _intelligence
 from creatoriqx_api.modules.jobs.infrastructure import tables as _jobs
 from creatoriqx_api.modules.planning.infrastructure import tables as _planning
+from creatoriqx_api.modules.publishing.infrastructure import tables as _publishing
 from creatoriqx_api.modules.telemetry.infrastructure import tables as _telemetry
 from creatoriqx_api.modules.transcripts.infrastructure import tables as _transcripts
 from creatoriqx_api.modules.workspaces.infrastructure import tables as _workspaces
@@ -24,6 +25,7 @@ __all__ = [
     "_intelligence",
     "_jobs",
     "_planning",
+    "_publishing",
     "_telemetry",
     "_transcripts",
     "_workspaces",

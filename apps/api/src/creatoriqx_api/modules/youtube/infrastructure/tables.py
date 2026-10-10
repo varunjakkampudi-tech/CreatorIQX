@@ -81,6 +81,31 @@ class ChannelVideo(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     comment_count: Mapped[int | None] = mapped_column(Integer, default=None)
 
 
+class YoutubeCapabilityRow(Base):
+    """What *this app's* Google API project is verified to do (ADR 0007, Phase 1D).
+
+    Deliberately **not** a tenant table: there is one Google Cloud project
+    per deployment (not per workspace), so its audit/verification status is
+    app-level config, not per-tenant data. No ``workspace_id`` column, so the
+    RLS meta-test (``tests/integration/test_rls.py``, which discovers tenant
+    tables purely by the presence of a ``workspace_id`` column) skips it
+    automatically - no explicit allow-list edit needed. Rows are seeded by a
+    script/fixture, not created through a tenant-scoped request.
+    """
+
+    __tablename__ = "youtube_capabilities"
+
+    capability: Mapped[str] = mapped_column(String(40), primary_key=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="restricted")
+    verified_on: Mapped[date | None] = mapped_column(Date, default=None)
+    source_url: Mapped[str | None] = mapped_column(String(2048), default=None)
+    required_scopes: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    verification_notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()", onupdate=datetime.utcnow
+    )
+
+
 class QuotaLedgerEntry(UUIDPrimaryKeyMixin, Base):
     """One durable record of a YouTube API call's quota cost (spec §6, §7).
 

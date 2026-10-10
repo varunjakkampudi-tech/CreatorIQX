@@ -154,6 +154,30 @@ erDiagram
         uuid id "PK"
         timestamp created_at
     }
+    publish_snapshots {
+        uuid workspace_id
+        uuid video_id
+        uuid script_version_id
+        uuid metadata_version_id
+        uuid chapter_version_id
+        uuid thumbnail_variant_id
+        boolean disclosure_altered
+        boolean disclosure_synthetic
+        timestamp scheduled_at
+        uuid approved_by
+        timestamp approved_at
+        uuid id "PK"
+        timestamp created_at
+    }
+    remote_snapshots {
+        uuid workspace_id
+        uuid video_link_id "FK"
+        jsonb fields
+        string privacy_status
+        boolean has_been_published
+        timestamp captured_at
+        uuid id "PK"
+    }
     script_versions {
         uuid workspace_id
         uuid video_id
@@ -164,6 +188,20 @@ erDiagram
         text body
         uuid parent_version_id "FK"
         boolean is_current
+        uuid id "PK"
+        timestamp created_at
+    }
+    sync_operations {
+        uuid workspace_id
+        uuid video_link_id "FK"
+        uuid applied_snapshot_id "FK"
+        string field_group
+        string status
+        text error_details
+        int quota_cost
+        string remote_etag
+        boolean readback_verified
+        timestamp finished_at
         uuid id "PK"
         timestamp created_at
     }
@@ -221,6 +259,27 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+    youtube_capabilities {
+        string capability "PK"
+        string status
+        date verified_on
+        string source_url
+        jsonb required_scopes
+        text verification_notes
+        timestamp updated_at
+    }
+    youtube_video_links {
+        uuid workspace_id "UK"
+        uuid video_id
+        uuid channel_id "FK"
+        string youtube_video_id "UK"
+        string sync_state
+        timestamp linked_at
+        timestamp last_synced_at
+        string last_remote_etag
+        uuid id "PK"
+        timestamp created_at
+    }
     channels ||--o{ channel_videos : "channel_id"
     chapter_versions ||--o{ chapter_versions : "parent_version_id"
     transcripts ||--o{ chapter_versions : "transcript_id"
@@ -229,10 +288,14 @@ erDiagram
     metadata_versions ||--o{ metadata_versions : "parent_version_id"
     channels ||--o{ oauth_connections : "channel_id"
     channels ||--o{ recommendations : "channel_id"
+    youtube_video_links ||--o{ remote_snapshots : "video_link_id"
     script_versions ||--o{ script_versions : "parent_version_id"
+    youtube_video_links ||--o{ sync_operations : "video_link_id"
+    publish_snapshots ||--o{ sync_operations : "applied_snapshot_id"
     transcripts ||--o{ transcript_segments : "transcript_id"
     transcripts ||--o{ transcripts : "parent_transcript_id"
     plans ||--o{ videos : "plan_id"
+    channels ||--o{ youtube_video_links : "channel_id"
 ```
 
 ## Table ownership
@@ -252,15 +315,20 @@ read it only through that module's public interface or domain events.
 | `oauth_connections` | youtube | yes |
 | `outbox_events` | jobs | no |
 | `plans` | planning | yes |
+| `publish_snapshots` | publishing | yes |
 | `quota_ledger` | youtube | yes |
 | `recommendations` | intelligence | yes |
+| `remote_snapshots` | publishing | yes |
 | `script_versions` | content | yes |
+| `sync_operations` | publishing | yes |
 | `transcript_segments` | transcripts | yes |
 | `transcripts` | transcripts | yes |
 | `usage_events` | telemetry | yes |
 | `users` | identity | no |
 | `videos` | planning | yes |
 | `workspaces` | workspaces | no |
+| `youtube_capabilities` | youtube | no |
+| `youtube_video_links` | publishing | yes |
 
 ## Global (non-tenant) tables
 
@@ -272,3 +340,4 @@ relay worker).
 - `outbox_events`
 - `users`
 - `workspaces`
+- `youtube_capabilities` (one Google Cloud project per deployment, not per workspace - ADR 0007/0015)
