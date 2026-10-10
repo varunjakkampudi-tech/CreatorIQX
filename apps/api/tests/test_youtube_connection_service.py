@@ -12,7 +12,7 @@ from creatoriqx_api.modules.identity.infrastructure.key_value_store import InMem
 from creatoriqx_api.modules.youtube.application.connection_service import (
     ChannelConnectionService,
 )
-from creatoriqx_api.modules.youtube.application.ports import ActiveConnection
+from creatoriqx_api.modules.youtube.application.ports import ActiveConnection, VideoStats
 from creatoriqx_api.modules.youtube.domain.connection import (
     ChannelInfo,
     ConnectedChannel,
@@ -70,7 +70,7 @@ class FakeDataApiClient:
     async def list_uploads(self, *args: object, **kwargs: object) -> list[str]:
         raise NotImplementedError
 
-    async def list_video_stats(self, *args: object, **kwargs: object) -> list[object]:
+    async def list_video_stats(self, *args: object, **kwargs: object) -> list[VideoStats]:
         raise NotImplementedError
 
 

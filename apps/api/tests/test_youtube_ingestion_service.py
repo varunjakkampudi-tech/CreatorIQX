@@ -11,8 +11,16 @@ from datetime import UTC, datetime
 import pytest
 
 from creatoriqx_api.modules.youtube.application.ingestion_service import ChannelIngestionService
-from creatoriqx_api.modules.youtube.application.ports import ActiveConnection, VideoStats
-from creatoriqx_api.modules.youtube.domain.connection import ChannelInfo
+from creatoriqx_api.modules.youtube.application.ports import (
+    ActiveConnection,
+    ChannelVideoRecord,
+    VideoStats,
+)
+from creatoriqx_api.modules.youtube.domain.connection import (
+    ChannelInfo,
+    ConnectedChannel,
+    OAuthTokens,
+)
 from creatoriqx_api.modules.youtube.domain.errors import QuotaExhaustedError
 
 _WORKSPACE = uuid.uuid4()
@@ -34,10 +42,17 @@ class FakeConnectionStore:
     active_connection: ActiveConnection = field(default_factory=lambda: _ACTIVE_CONNECTION)
     channel_updates: list[ChannelInfo] = field(default_factory=list)
 
-    async def save_connection(self, **kwargs: object) -> object:
+    async def save_connection(
+        self,
+        *,
+        workspace_id: uuid.UUID,
+        connected_by_user_id: uuid.UUID,
+        tokens: OAuthTokens,
+        channel: ChannelInfo,
+    ) -> ConnectedChannel:
         raise NotImplementedError
 
-    async def list_channels(self, workspace_id: uuid.UUID) -> list[object]:
+    async def list_channels(self, workspace_id: uuid.UUID) -> list[ConnectedChannel]:
         raise NotImplementedError
 
     async def get_active_connection(
@@ -66,7 +81,7 @@ class FakeVideoStore:
     ) -> None:
         self.upserted.extend(videos)
 
-    async def list_videos(self, **kwargs: object) -> list[object]:
+    async def list_videos(self, **kwargs: object) -> list[ChannelVideoRecord]:
         raise NotImplementedError
 
 

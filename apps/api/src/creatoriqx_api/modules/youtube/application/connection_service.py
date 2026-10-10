@@ -11,7 +11,7 @@ from __future__ import annotations
 import secrets
 import uuid
 
-from creatoriqx_api.identity.application.ports import KeyValueStore
+from creatoriqx_api.modules.identity.application.ports import KeyValueStore
 from creatoriqx_api.modules.youtube.application.ports import (
     ChannelConnectionStore,
     YouTubeDataApiClient,
