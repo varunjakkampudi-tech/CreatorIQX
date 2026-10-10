@@ -35,7 +35,13 @@ from creatoriqx_api.modules.youtube.infrastructure.tables import (
     OAuthConnection,
 )
 from creatoriqx_api.platform.crypto import EncryptedValue, TokenCipher
-from creatoriqx_api.platform.database import session_scope
+from creatoriqx_api.platform.database import session_scope, set_tenant_context
+
+# channels/oauth_connections' RLS policy only checks workspace_id, never
+# user_id (migration 0006); reads and connection-maintenance writes have no
+# acting user to attribute, so a nil UUID stands in (same convention as
+# youtube.infrastructure.quota_ledger._NO_ACTOR and planning.sql_video_store).
+_NO_ACTOR = uuid.UUID(int=0)
 
 
 class SqlChannelConnectionStore:
@@ -54,6 +60,9 @@ class SqlChannelConnectionStore:
         channel: ChannelInfo,
     ) -> ConnectedChannel:
         async with session_scope(self._factory) as session:
+            await set_tenant_context(
+                session, workspace_id=workspace_id, user_id=connected_by_user_id
+            )
             existing = await session.execute(
                 select(Channel).where(
                     Channel.workspace_id == workspace_id,
@@ -109,6 +118,7 @@ class SqlChannelConnectionStore:
 
     async def list_channels(self, workspace_id: uuid.UUID) -> list[ConnectedChannel]:
         async with session_scope(self._factory) as session:
+            await set_tenant_context(session, workspace_id=workspace_id, user_id=_NO_ACTOR)
             result = await session.execute(
                 select(Channel, OAuthConnection.status)
                 .join(OAuthConnection, OAuthConnection.channel_id == Channel.id)
@@ -124,6 +134,7 @@ class SqlChannelConnectionStore:
         self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID
     ) -> ActiveConnection:
         async with session_scope(self._factory) as session:
+            await set_tenant_context(session, workspace_id=workspace_id, user_id=_NO_ACTOR)
             result = await session.execute(
                 select(Channel, OAuthConnection)
                 .join(OAuthConnection, OAuthConnection.channel_id == Channel.id)
@@ -155,10 +166,16 @@ class SqlChannelConnectionStore:
                 refresh_token=refresh_token,
             )
 
-    async def update_access_token(self, *, connection_id: uuid.UUID, tokens: OAuthTokens) -> None:
+    async def update_access_token(
+        self, *, workspace_id: uuid.UUID, connection_id: uuid.UUID, tokens: OAuthTokens
+    ) -> None:
         async with session_scope(self._factory) as session:
+            await set_tenant_context(session, workspace_id=workspace_id, user_id=_NO_ACTOR)
             result = await session.execute(
-                select(OAuthConnection).where(OAuthConnection.id == connection_id)
+                select(OAuthConnection).where(
+                    OAuthConnection.workspace_id == workspace_id,
+                    OAuthConnection.id == connection_id,
+                )
             )
             conn = result.scalar_one()
             conn.access_token_encrypted = self._cipher.encrypt(tokens.access_token).to_storable()
@@ -171,6 +188,7 @@ class SqlChannelConnectionStore:
 
     async def disconnect(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID) -> None:
         async with session_scope(self._factory) as session:
+            await set_tenant_context(session, workspace_id=workspace_id, user_id=_NO_ACTOR)
             result = await session.execute(
                 select(OAuthConnection).where(
                     OAuthConnection.workspace_id == workspace_id,
@@ -187,6 +205,7 @@ class SqlChannelConnectionStore:
         self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID, channel: ChannelInfo
     ) -> None:
         async with session_scope(self._factory) as session:
+            await set_tenant_context(session, workspace_id=workspace_id, user_id=_NO_ACTOR)
             result = await session.execute(
                 select(Channel).where(
                     Channel.workspace_id == workspace_id, Channel.id == channel_id
@@ -212,6 +231,7 @@ class SqlChannelVideoStore:
         if not videos:
             return
         async with session_scope(self._factory) as session:
+            await set_tenant_context(session, workspace_id=workspace_id, user_id=_NO_ACTOR)
             for video in videos:
                 stmt = (
                     pg_insert(ChannelVideo)
@@ -245,6 +265,7 @@ class SqlChannelVideoStore:
         self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID
     ) -> list[ChannelVideoRecord]:
         async with session_scope(self._factory) as session:
+            await set_tenant_context(session, workspace_id=workspace_id, user_id=_NO_ACTOR)
             result = await session.execute(
                 select(ChannelVideo)
                 .where(

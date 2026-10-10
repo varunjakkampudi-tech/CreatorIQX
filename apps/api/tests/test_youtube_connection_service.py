@@ -109,7 +109,9 @@ class FakeConnectionStore:
     ) -> ActiveConnection:
         raise NotImplementedError
 
-    async def update_access_token(self, *, connection_id: uuid.UUID, tokens: OAuthTokens) -> None:
+    async def update_access_token(
+        self, *, workspace_id: uuid.UUID, connection_id: uuid.UUID, tokens: OAuthTokens
+    ) -> None:
         raise NotImplementedError
 
     async def disconnect(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID) -> None:

@@ -17,7 +17,13 @@ from creatoriqx_api.modules.intelligence.domain.recommendation import (
     RecommendationType,
 )
 from creatoriqx_api.modules.intelligence.infrastructure.tables import RecommendationRow
-from creatoriqx_api.platform.database import session_scope
+from creatoriqx_api.platform.database import session_scope, set_tenant_context
+
+# This table's RLS policy only checks workspace_id, never user_id (same shape
+# as migration 0006's tenant tables); these writes have no acting user to
+# attribute, so a nil UUID stands in (youtube.infrastructure.quota_ledger's
+# convention).
+_NO_ACTOR = uuid.UUID(int=0)
 
 
 class SqlRecommendationStore:
@@ -29,7 +35,11 @@ class SqlRecommendationStore:
     async def save_many(self, recommendations: list[NewRecommendation]) -> list[Recommendation]:
         if not recommendations:
             return []
+        workspace_id = recommendations[0].workspace_id
+        if any(rec.workspace_id != workspace_id for rec in recommendations):
+            raise ValueError("save_many requires every recommendation to share one workspace_id")
         async with session_scope(self._factory) as session:
+            await set_tenant_context(session, workspace_id=workspace_id, user_id=_NO_ACTOR)
             rows = [
                 RecommendationRow(
                     workspace_id=rec.workspace_id,
@@ -53,6 +63,7 @@ class SqlRecommendationStore:
         self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID
     ) -> list[Recommendation]:
         async with session_scope(self._factory) as session:
+            await set_tenant_context(session, workspace_id=workspace_id, user_id=_NO_ACTOR)
             result = await session.execute(
                 select(RecommendationRow)
                 .where(
@@ -67,6 +78,7 @@ class SqlRecommendationStore:
         self, *, workspace_id: uuid.UUID, recommendation_id: uuid.UUID, status: str
     ) -> Recommendation:
         async with session_scope(self._factory) as session:
+            await set_tenant_context(session, workspace_id=workspace_id, user_id=_NO_ACTOR)
             result = await session.execute(
                 select(RecommendationRow).where(
                     RecommendationRow.workspace_id == workspace_id,

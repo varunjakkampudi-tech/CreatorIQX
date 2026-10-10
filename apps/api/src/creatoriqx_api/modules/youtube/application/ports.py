@@ -74,7 +74,9 @@ class ChannelConnectionStore(Protocol):
     ) -> ActiveConnection:
         """The live connection backing ``channel_id``, or raise ``ChannelNotConnectedError``."""
 
-    async def update_access_token(self, *, connection_id: uuid.UUID, tokens: OAuthTokens) -> None:
+    async def update_access_token(
+        self, *, workspace_id: uuid.UUID, connection_id: uuid.UUID, tokens: OAuthTokens
+    ) -> None:
         """Persist a freshly refreshed access token (and expiry) for this connection."""
 
     async def disconnect(self, *, workspace_id: uuid.UUID, channel_id: uuid.UUID) -> None:
