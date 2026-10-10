@@ -231,6 +231,15 @@ def test_publishing_stores_round_trip_under_rls() -> None:
             # role is not a bypass-RLS role either (these tables use FORCE ROW
             # LEVEL SECURITY, which applies even to the owner) - it still
             # needs app.workspace_id set, same as the app role would.
+            #
+            # publish_snapshots also has a BEFORE UPDATE OR DELETE trigger
+            # (``publish_snapshots_block_update_delete``, migration 0009) that
+            # unconditionally raises, by design (ADR 0006 immutability) - it
+            # fires for every role, owner included. The established precedent
+            # for cleaning up an append-only table under test (see
+            # ``test_platform_tables.py``'s audit_log teardown) is to disable
+            # that trigger for the duration of the delete and re-enable it
+            # immediately after, rather than skip the delete or touch grants.
             owner_engine = create_async_engine(_test_url("DATABASE_OWNER_URL"))
             try:
                 owner_factory = async_sessionmaker(owner_engine, expire_on_commit=False)
@@ -249,8 +258,20 @@ def test_publishing_stores_round_trip_under_rls() -> None:
                         {"w": workspace_id},
                     )
                     await cleanup.execute(
+                        text(
+                            "ALTER TABLE publish_snapshots "
+                            "DISABLE TRIGGER publish_snapshots_block_update_delete"
+                        )
+                    )
+                    await cleanup.execute(
                         text("DELETE FROM publish_snapshots WHERE workspace_id = :w"),
                         {"w": workspace_id},
+                    )
+                    await cleanup.execute(
+                        text(
+                            "ALTER TABLE publish_snapshots "
+                            "ENABLE TRIGGER publish_snapshots_block_update_delete"
+                        )
                     )
                     await cleanup.execute(
                         text("DELETE FROM channels WHERE workspace_id = :w"), {"w": workspace_id}
