@@ -73,7 +73,7 @@ jobs:
         run: pnpm run test:a11y
 
       - name: Upload the resolved lockfile (so it can be committed if it drifted)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pnpm-lock
           path: pnpm-lock.yaml
