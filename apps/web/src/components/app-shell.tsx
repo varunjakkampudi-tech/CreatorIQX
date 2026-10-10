@@ -1,6 +1,12 @@
 "use client";
 
-import { LayoutDashboard, CalendarDays, Film, Settings, Sparkles } from "lucide-react";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  Film,
+  Settings,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -42,10 +48,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Sparkles aria-hidden="true" className="text-brand" />
           <span className="text-lg font-semibold">{t("productName")}</span>
         </div>
-        <nav className="flex flex-1 flex-col gap-1" aria-label={t("productName")}>
+        <nav
+          className="flex flex-1 flex-col gap-1"
+          aria-label={t("productName")}
+        >
           {items.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+            const active =
+              pathname === item.href || pathname?.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}

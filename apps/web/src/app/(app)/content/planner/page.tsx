@@ -109,7 +109,10 @@ export default function PlannerPage() {
         <h2 className="mb-3 text-lg font-semibold text-ink">{t("newIdea")}</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <label htmlFor="plan-title" className="text-sm font-medium text-ink">
+            <label
+              htmlFor="plan-title"
+              className="text-sm font-medium text-ink"
+            >
               {t("titleLabel")}
             </label>
             <Input
@@ -121,7 +124,10 @@ export default function PlannerPage() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="plan-series" className="text-sm font-medium text-ink">
+            <label
+              htmlFor="plan-series"
+              className="text-sm font-medium text-ink"
+            >
               {t("seriesLabel")}
             </label>
             <Input
@@ -132,7 +138,10 @@ export default function PlannerPage() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="plan-notes" className="text-sm font-medium text-ink">
+            <label
+              htmlFor="plan-notes"
+              className="text-sm font-medium text-ink"
+            >
               {t("notesLabel")}
             </label>
             <Input
@@ -145,7 +154,10 @@ export default function PlannerPage() {
           {createPlan.isError ? (
             <p className="text-sm text-danger">{t("error")}</p>
           ) : null}
-          <Button type="submit" disabled={createPlan.isPending || !title.trim()}>
+          <Button
+            type="submit"
+            disabled={createPlan.isPending || !title.trim()}
+          >
             {createPlan.isPending ? t("adding") : t("add")}
           </Button>
         </form>
@@ -164,11 +176,18 @@ export default function PlannerPage() {
               </h3>
               <div className="flex flex-col gap-2">
                 {seriesPlans.map((plan) => (
-                  <Card key={plan.id} className="flex items-center justify-between gap-4">
+                  <Card
+                    key={plan.id}
+                    className="flex items-center justify-between gap-4"
+                  >
                     <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-ink">{plan.title}</span>
+                      <span className="text-sm font-medium text-ink">
+                        {plan.title}
+                      </span>
                       {plan.notes ? (
-                        <span className="text-xs text-ink-muted">{plan.notes}</span>
+                        <span className="text-xs text-ink-muted">
+                          {plan.notes}
+                        </span>
                       ) : null}
                     </div>
                     {plan.promoted_video_id ? (

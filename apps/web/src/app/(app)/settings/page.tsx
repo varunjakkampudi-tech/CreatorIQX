@@ -11,7 +11,12 @@ import { SignInCard } from "@/components/sign-in-card";
 /** Settings (spec section 4 #20 / section 11): account and workspace info. */
 export default function SettingsPage() {
   const t = useTranslations("SettingsPage");
-  const { isLoading: sessionLoading, isSignedIn, csrfToken, email } = useSession();
+  const {
+    isLoading: sessionLoading,
+    isSignedIn,
+    csrfToken,
+    email,
+  } = useSession();
 
   const meQuery = $api.useQuery("get", "/api/v1/me", { enabled: isSignedIn });
   const workspaceQuery = $api.useQuery("get", "/api/v1/workspaces/current", {
@@ -52,7 +57,9 @@ export default function SettingsPage() {
       </header>
 
       <Card>
-        <h2 className="mb-3 text-lg font-semibold text-ink">{t("accountSection")}</h2>
+        <h2 className="mb-3 text-lg font-semibold text-ink">
+          {t("accountSection")}
+        </h2>
         <dl className="flex flex-col gap-2 text-sm">
           <div className="flex justify-between gap-4">
             <dt className="text-ink-muted">{t("email")}</dt>
@@ -66,7 +73,9 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h2 className="mb-3 text-lg font-semibold text-ink">{t("workspaceSection")}</h2>
+        <h2 className="mb-3 text-lg font-semibold text-ink">
+          {t("workspaceSection")}
+        </h2>
         <dl className="flex flex-col gap-2 text-sm">
           <div className="flex justify-between gap-4">
             <dt className="text-ink-muted">{t("workspaceName")}</dt>
@@ -76,7 +85,11 @@ export default function SettingsPage() {
       </Card>
 
       <div>
-        <Button variant="secondary" onClick={handleSignOut} disabled={signOut.isPending}>
+        <Button
+          variant="secondary"
+          onClick={handleSignOut}
+          disabled={signOut.isPending}
+        >
           {t("signOut")}
         </Button>
       </div>

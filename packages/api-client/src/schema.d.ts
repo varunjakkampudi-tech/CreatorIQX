@@ -107,6 +107,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/videos/{video_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve the video: freeze an immutable publish snapshot */
+        post: operations["approve_video_api_v1_videos__video_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/videos/{video_id}/chapters": {
         parameters: {
             query?: never;
@@ -194,6 +211,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/videos/{video_id}/qa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the current QA checklist outcome */
+        get: operations["get_qa_api_v1_videos__video_id__qa_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/qa/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run the pre-publish QA checklist */
+        post: operations["run_qa_api_v1_videos__video_id__qa_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/videos/{video_id}/scripts": {
         parameters: {
             query?: never;
@@ -223,6 +274,23 @@ export interface paths {
         put?: never;
         /** Restore an old script version */
         post: operations["restore_script_version_api_v1_videos__video_id__scripts__version_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The video's latest approved publish snapshot */
+        get: operations["get_snapshot_api_v1_videos__video_id__snapshot_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -369,6 +437,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ApproveIn */
+        ApproveIn: {
+            /** Scheduled At */
+            scheduled_at?: string | null;
+            /**
+             * Wants Scheduling
+             * @default false
+             */
+            wants_scheduling: boolean;
+        };
         /** ChapterIn */
         ChapterIn: {
             /** Start Seconds */
@@ -580,6 +658,70 @@ export interface components {
             series: string | null;
             /** Title */
             title: string;
+        };
+        /** PublishSnapshotOut */
+        PublishSnapshotOut: {
+            /**
+             * Approved At
+             * Format: date-time
+             */
+            approved_at: string;
+            /**
+             * Approved By
+             * Format: uuid
+             */
+            approved_by: string;
+            /** Chapter Version Id */
+            chapter_version_id: string | null;
+            /** Disclosure Altered */
+            disclosure_altered: boolean;
+            /** Disclosure Synthetic */
+            disclosure_synthetic: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Metadata Version Id
+             * Format: uuid
+             */
+            metadata_version_id: string;
+            /** Scheduled At */
+            scheduled_at: string | null;
+            /**
+             * Script Version Id
+             * Format: uuid
+             */
+            script_version_id: string;
+            /** Thumbnail Variant Id */
+            thumbnail_variant_id: string | null;
+            /**
+             * Video Id
+             * Format: uuid
+             */
+            video_id: string;
+        };
+        /** QaCheckOut */
+        QaCheckOut: {
+            /** Id */
+            id: string;
+            /** Passed */
+            passed: boolean;
+            /** Reasons */
+            reasons: string[];
+        };
+        /** QaResultOut */
+        QaResultOut: {
+            /** Checks */
+            checks: components["schemas"]["QaCheckOut"][];
+            /** Passed */
+            passed: boolean;
+            /**
+             * Video Id
+             * Format: uuid
+             */
+            video_id: string;
         };
         /**
          * Role
@@ -897,6 +1039,41 @@ export interface operations {
             };
         };
     };
+    approve_video_api_v1_videos__video_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublishSnapshotOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_chapter_versions_api_v1_videos__video_id__chapters_get: {
         parameters: {
             query?: never;
@@ -1128,6 +1305,68 @@ export interface operations {
             };
         };
     };
+    get_qa_api_v1_videos__video_id__qa_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QaResultOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_qa_api_v1_videos__video_id__qa_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QaResultOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_script_versions_api_v1_videos__video_id__scripts_get: {
         parameters: {
             query?: never;
@@ -1213,6 +1452,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScriptVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_snapshot_api_v1_videos__video_id__snapshot_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublishSnapshotOut"];
                 };
             };
             /** @description Validation Error */

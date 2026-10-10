@@ -8,7 +8,12 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SignInCard } from "@/components/sign-in-card";
 
-const TERMINAL_STATUSES = new Set(["published", "analyzed", "rejected", "archived"]);
+const TERMINAL_STATUSES = new Set([
+  "published",
+  "analyzed",
+  "rejected",
+  "archived",
+]);
 
 export default function DashboardPage() {
   const t = useTranslations("DashboardPage");
@@ -37,7 +42,9 @@ export default function DashboardPage() {
   const plans = plansQuery.data ?? [];
   const videos = videosQuery.data ?? [];
   const inMotion = videos.filter((v) => !TERMINAL_STATUSES.has(v.status));
-  const published = videos.filter((v) => v.status === "published" || v.status === "analyzed");
+  const published = videos.filter(
+    (v) => v.status === "published" || v.status === "analyzed",
+  );
   const recentVideos = [...videos].slice(-5).reverse();
 
   return (
@@ -54,16 +61,22 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <p className="text-sm text-ink-muted">{t("videosCard")}</p>
-          <p className="mt-2 text-3xl font-semibold text-ink">{inMotion.length}</p>
+          <p className="mt-2 text-3xl font-semibold text-ink">
+            {inMotion.length}
+          </p>
         </Card>
         <Card>
           <p className="text-sm text-ink-muted">{t("publishedCard")}</p>
-          <p className="mt-2 text-3xl font-semibold text-ink">{published.length}</p>
+          <p className="mt-2 text-3xl font-semibold text-ink">
+            {published.length}
+          </p>
         </Card>
       </div>
 
       <Card>
-        <h2 className="mb-3 text-lg font-semibold text-ink">{t("recentVideos")}</h2>
+        <h2 className="mb-3 text-lg font-semibold text-ink">
+          {t("recentVideos")}
+        </h2>
         {recentVideos.length === 0 ? (
           <p className="text-sm text-ink-muted">{t("emptyVideos")}</p>
         ) : (

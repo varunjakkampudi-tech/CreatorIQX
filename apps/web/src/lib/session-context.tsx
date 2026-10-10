@@ -42,9 +42,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [sessionQuery.data, sessionQuery.isLoading]);
 
   return (
-    <SessionContext.Provider value={value}>
-      {children}
-    </SessionContext.Provider>
+    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
   );
 }
 
