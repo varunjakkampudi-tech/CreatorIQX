@@ -48,12 +48,21 @@ def _now() -> datetime:
 
 
 class _VersionLike(Protocol):
-    """Structural shape every version dataclass below shares."""
+    """Structural shape every version dataclass below shares.
 
-    id: uuid.UUID
-    workspace_id: uuid.UUID
-    video_id: uuid.UUID
-    is_current: bool
+    Declared as read-only properties, not plain attributes: a frozen
+    dataclass (every version type here) only satisfies a Protocol that
+    doesn't also demand a setter.
+    """
+
+    @property
+    def id(self) -> uuid.UUID: ...
+    @property
+    def workspace_id(self) -> uuid.UUID: ...
+    @property
+    def video_id(self) -> uuid.UUID: ...
+    @property
+    def is_current(self) -> bool: ...
 
 
 def _with_current[V: _VersionLike](record: V, is_current: bool) -> V:

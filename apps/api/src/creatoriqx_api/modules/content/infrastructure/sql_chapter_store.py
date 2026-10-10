@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import cast
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -79,7 +80,10 @@ def _to_domain(row: ChapterVersionRow) -> ChapterVersion:
         video_id=row.video_id,
         transcript_id=row.transcript_id,
         chapters=tuple(
-            Chapter(start_seconds=int(c["start_seconds"]), title=str(c["title"]))
+            Chapter(
+                start_seconds=cast(int, c["start_seconds"]),
+                title=cast(str, c["title"]),
+            )
             for c in row.chapters
         ),
         parent_version_id=row.parent_version_id,
