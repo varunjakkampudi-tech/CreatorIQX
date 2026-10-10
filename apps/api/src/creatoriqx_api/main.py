@@ -52,6 +52,27 @@ from creatoriqx_api.modules.planning.application.video_lifecycle_service import 
 )
 from creatoriqx_api.modules.planning.infrastructure.sql_plan_store import SqlPlanStore
 from creatoriqx_api.modules.planning.infrastructure.sql_video_store import SqlVideoStore
+from creatoriqx_api.modules.publishing.api.approval import router as approval_router
+from creatoriqx_api.modules.publishing.api.qa import router as qa_router
+from creatoriqx_api.modules.publishing.api.youtube_sync import router as youtube_sync_router
+from creatoriqx_api.modules.publishing.application.approval_service import ApprovalService
+from creatoriqx_api.modules.publishing.application.capability_service import CapabilityService
+from creatoriqx_api.modules.publishing.application.qa_service import QaService
+from creatoriqx_api.modules.publishing.application.youtube_sync_service import (
+    YoutubeSyncService,
+)
+from creatoriqx_api.modules.publishing.infrastructure.sql_publish_snapshot_store import (
+    SqlPublishSnapshotStore,
+)
+from creatoriqx_api.modules.publishing.infrastructure.sql_remote_snapshot_store import (
+    SqlRemoteSnapshotStore,
+)
+from creatoriqx_api.modules.publishing.infrastructure.sql_sync_operation_store import (
+    SqlSyncOperationStore,
+)
+from creatoriqx_api.modules.publishing.infrastructure.sql_video_link_store import (
+    SqlYoutubeVideoLinkStore,
+)
 from creatoriqx_api.modules.transcripts.api.transcripts import router as transcripts_router
 from creatoriqx_api.modules.transcripts.application.transcript_service import TranscriptService
 from creatoriqx_api.modules.transcripts.infrastructure.sql_transcript_store import (
@@ -73,6 +94,7 @@ from creatoriqx_api.modules.youtube.application.connection_service import (
 )
 from creatoriqx_api.modules.youtube.infrastructure.google_oauth import GoogleYouTubeOAuthProvider
 from creatoriqx_api.modules.youtube.infrastructure.quota_ledger import RedisPostgresQuotaLedger
+from creatoriqx_api.modules.youtube.infrastructure.sql_capability_store import SqlCapabilityStore
 from creatoriqx_api.modules.youtube.infrastructure.sql_connection_store import (
     SqlChannelConnectionStore,
     SqlChannelVideoStore,
@@ -161,6 +183,9 @@ def create_app(
     app.include_router(scripts_router, prefix=API_V1_PREFIX)
     app.include_router(content_metadata_router, prefix=API_V1_PREFIX)
     app.include_router(chapters_router, prefix=API_V1_PREFIX)
+    _wire_publishing(app, engine)
+    app.include_router(qa_router, prefix=API_V1_PREFIX)
+    app.include_router(approval_router, prefix=API_V1_PREFIX)
     app.state.task_queue = CeleryTaskQueue()
 
     if settings.oidc_client_id:
@@ -179,6 +204,7 @@ def create_app(
         app.include_router(youtube_connect_router, prefix=API_V1_PREFIX)
         app.include_router(youtube_ingestion_router, prefix=API_V1_PREFIX)
         app.include_router(intelligence_router, prefix=API_V1_PREFIX)
+        app.include_router(youtube_sync_router, prefix=API_V1_PREFIX)
 
     @app.get("/healthz", tags=["health"], summary="Liveness: the process is up")
     async def healthz() -> JSONResponse:
@@ -251,6 +277,49 @@ def _wire_content(app: FastAPI, engine: AsyncEngine) -> None:
     app.state.chapter_service = ChapterService(SqlChapterStore(factory), app.state.transcript_store)
 
 
+def _wire_publishing(app: FastAPI, engine: AsyncEngine) -> None:
+    """QA, approval and capability services (Phase 1D). No feature flag: like
+    the planner, transcripts and content, none of this needs external
+    credentials - only ``YoutubeSyncService`` (wired inside ``_wire_youtube``
+    below) does, because it is the one piece that calls the real YouTube API.
+
+    The stores built here are also stashed on ``app.state`` so
+    ``_wire_youtube`` can hand the exact same instances to
+    ``YoutubeSyncService`` rather than constructing a second, redundant set.
+    """
+    factory = create_session_factory(engine)
+    link_store = SqlYoutubeVideoLinkStore(factory)
+    snapshot_store = SqlPublishSnapshotStore(factory)
+    remote_snapshot_store = SqlRemoteSnapshotStore(factory)
+    sync_op_store = SqlSyncOperationStore(factory)
+    capability_store = SqlCapabilityStore(factory)
+    metadata_store = SqlMetadataStore(factory)
+
+    qa_service = QaService(
+        script_store=SqlScriptStore(factory),
+        metadata_store=metadata_store,
+        chapter_store=SqlChapterStore(factory),
+        video_link_store=link_store,
+        remote_snapshot_store=remote_snapshot_store,
+    )
+    app.state.qa_service = qa_service
+    app.state.approval_service = ApprovalService(
+        qa_service=qa_service,
+        script_store=SqlScriptStore(factory),
+        metadata_store=metadata_store,
+        chapter_store=SqlChapterStore(factory),
+        snapshot_store=snapshot_store,
+        video_store=SqlVideoStore(factory),
+    )
+    app.state.capability_service = CapabilityService(capability_store)
+
+    app.state.publish_snapshot_store = snapshot_store
+    app.state.youtube_video_link_store = link_store
+    app.state.sync_operation_store = sync_op_store
+    app.state.remote_snapshot_store = remote_snapshot_store
+    app.state.publishing_metadata_store = metadata_store
+
+
 def _wire_youtube(app: FastAPI, settings: Settings, engine: AsyncEngine, redis: Redis) -> None:
     """The youtube connection/ingestion and intelligence/audit services (Phase 1A).
 
@@ -287,6 +356,23 @@ def _wire_youtube(app: FastAPI, settings: Settings, engine: AsyncEngine, redis: 
     app.state.channel_audit_service = ChannelAuditService(
         video_reader=YouTubeChannelVideoReader(video_store),
         recommendation_store=app.state.recommendation_store,
+    )
+
+    # YoutubeSyncService is the one publishing-module service that needs a
+    # real channel connection and write client, so it is wired here, gated
+    # exactly like the rest of this function, rather than in the always-on
+    # ``_wire_publishing`` - reusing the stores that function already put on
+    # ``app.state`` instead of constructing a second set.
+    app.state.youtube_sync_service = YoutubeSyncService(
+        link_store=app.state.youtube_video_link_store,
+        snapshot_store=app.state.publish_snapshot_store,
+        sync_op_store=app.state.sync_operation_store,
+        remote_snapshot_store=app.state.remote_snapshot_store,
+        metadata_store=app.state.publishing_metadata_store,
+        capabilities=app.state.capability_service,
+        connection_store=connection_store,
+        data_api_client=data_api_client,
+        write_client=data_api_client,
     )
 
 

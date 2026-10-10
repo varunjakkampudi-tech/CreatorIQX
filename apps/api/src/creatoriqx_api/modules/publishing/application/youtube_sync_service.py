@@ -120,6 +120,15 @@ class YoutubeSyncService:
             )
         )
 
+    async def get_link(
+        self, *, workspace_id: uuid.UUID, video_id: uuid.UUID
+    ) -> YoutubeVideoLink | None:
+        """The video's current YouTube link (sync state included), or ``None`` if
+        it has never been linked. A pure read, kept on the service for the same
+        reason as :meth:`ApprovalService.get_latest_snapshot`.
+        """
+        return await self._links.get_for_video(workspace_id=workspace_id, video_id=video_id)
+
     async def apply_snapshot(
         self, *, workspace_id: uuid.UUID, video_id: uuid.UUID
     ) -> list[SyncOperation]:

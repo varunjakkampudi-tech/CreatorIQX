@@ -145,6 +145,18 @@ class ApprovalService:
         )
         return snapshot
 
+    async def get_latest_snapshot(
+        self, *, workspace_id: uuid.UUID, video_id: uuid.UUID
+    ) -> PublishSnapshot | None:
+        """The video's most recently approved snapshot, or ``None`` if it has never
+        been approved. A pure read, kept on the service (rather than exposing the
+        store to the API layer directly) for the same reason every other route in
+        this codebase depends on a service, not a store.
+        """
+        return await self._snapshots.get_latest_for_video(
+            workspace_id=workspace_id, video_id=video_id
+        )
+
     async def invalidate_if_approved(
         self,
         *,
