@@ -1,0 +1,17 @@
+# Trivy ignore list for the CRITICAL-blocking scan in ci-security.yml
+# (Container image scan (Trivy, CRITICAL, blocking)).
+#
+# Every entry here is an accepted, documented exception, not a blanket
+# severity downgrade. The full report-only scan in the same workflow still
+# shows these (and every HIGH finding) on every run, so they stay visible.
+# Review this file every phase per spec §10's threat-model rule, and remove
+# an entry the moment a real fix is available.
+
+# zlib: integer overflow and resultant heap-based buffer overflow in
+# inflate() via a large gzip header extra field. Debian marks this
+# "will_not_fix" for the zlib1g package shipped in the python/node slim
+# base images used here (bookworm/trixie) - there is no patched Debian
+# package version to upgrade to. Upstream zlib considers it low-risk
+# outside of attacker-controlled gzip headers passed to inflate(), which
+# this codebase does not do directly.
+CVE-2023-45853

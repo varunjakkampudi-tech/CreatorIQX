@@ -1,12 +1,31 @@
 name: ci-security
 
-# Security scans (spec §10, §17; backlog P0-102). Gitleaks blocks from Phase 0
-# (spec rule "secret scanning in CI"); pip-audit, pnpm audit and the Trivy
-# image scan are report-only in Phase 0 and become blocking from Phase 1A
-# (OQ-09 answer: gitleaks is cheap and has no false-positive-tuning history
-# yet, the others need a baseline triage first). CodeQL lives in its own
-# workflow (codeql.yml) because GitHub's advanced-setup action wants to own
-# its trigger and default branch analysis.
+# Security scans (spec §10, §17; backlog P0-102). Gitleaks has blocked since
+# Phase 0. pip-audit, pnpm audit and the Trivy image scan were report-only
+# through Phase 0 pending a baseline triage (OQ-09); that triage is now done
+# and all three block as of this phase (spec: "blocking from Phase 1A"):
+#   - pip-audit: blocking outright. The one real finding (PyJWT 2.10.1,
+#     21 known CVEs incl. a CRITICAL auth-bypass, CVE-2026-102268) is fixed
+#     by the PyJWT 2.15.0 bump in this same change; pip-audit is clean.
+#   - pnpm audit: blocking, with one documented exception. GHSA-vfj7-8cjw-p6xm
+#     (braces, stack-exhaustion DoS) has no patched version upstream and
+#     only reaches this repo through @next/eslint-plugin-next's lint
+#     tooling (devDependency, never shipped in a built image) - confirmed by
+#     `pnpm audit --prod` coming back clean. Ignored by GHSA id, not
+#     silenced wholesale, so a new real finding still fails the build.
+#   - Trivy: blocking on CRITICAL only, via a second scan + .trivyignore.yaml
+#     at the repo root for the one accepted CRITICAL Debian marks
+#     "will_not_fix" (zlib1g, CVE-2023-45853). The first (unchanged) scan
+#     keeps reporting CRITICAL+HIGH without blocking: the ~44-54 HIGH
+#     findings per image are current Debian trixie/bookworm OS packages
+#     with no fix version published yet ("affected", no patched version) -
+#     blocking on those today would make CI permanently red for reasons no
+#     code change here can fix. Raising HIGH to blocking needs its own
+#     baseline/allowlist pass once those packages are patched upstream or
+#     individually triaged - tracked in docs/OPEN_QUESTIONS.md, not silently
+#     dropped. Re-reviewed every phase per spec §10's threat-model rule.
+# CodeQL lives in its own workflow (codeql.yml) because GitHub's
+# advanced-setup action wants to own its trigger and default branch analysis.
 
 on:
   push:
@@ -48,7 +67,7 @@ jobs:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
 
   pip-audit:
-    name: Python dependency audit (pip-audit, report-only in Phase 0)
+    name: Python dependency audit (pip-audit, blocking)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -67,15 +86,14 @@ jobs:
           uv export --package creatoriqx-mcp-server --no-dev --no-hashes --format requirements.txt \
             --locked >> /tmp/requirements.txt
 
-      - name: pip-audit (report-only; does not fail the build in Phase 0)
-        continue-on-error: true
+      - name: pip-audit (blocking as of Phase 1A+)
         run: |
           uv tool run pip-audit --requirement /tmp/requirements.txt \
             --format markdown >> "$GITHUB_STEP_SUMMARY"
           uv tool run pip-audit --requirement /tmp/requirements.txt
 
   pnpm-audit:
-    name: JS dependency audit (pnpm audit, report-only in Phase 0)
+    name: JS dependency audit (pnpm audit, blocking)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -91,18 +109,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: pnpm audit (report-only; does not fail the build in Phase 0)
-        continue-on-error: true
+      - name: pnpm audit (blocking as of Phase 1A+; one documented exception)
         run: |
           {
             echo '```'
-            pnpm audit
+            pnpm audit || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          pnpm audit
+          # GHSA-vfj7-8cjw-p6xm (braces, stack-exhaustion DoS): no patched
+          # version exists upstream yet; only reachable through
+          # @next/eslint-plugin-next's lint tooling (devDependency, never
+          # shipped in a built image - confirmed by `pnpm audit --prod`
+          # coming back clean). Ignored by id, not by severity, so any
+          # other high/critical finding still fails this step.
+          pnpm audit --ignore GHSA-vfj7-8cjw-p6xm
 
   trivy:
-    name: Container image scan (Trivy, report-only in Phase 0)
+    name: Container image scan (Trivy)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
@@ -127,10 +150,19 @@ jobs:
       - name: Build the image to scan
         run: docker build -f ${{ matrix.dockerfile }} -t ${{ matrix.tag }} .
 
-      - name: Trivy scan (report-only; exit-code 0 in Phase 0)
+      - name: Trivy scan - full report (CRITICAL+HIGH, non-blocking)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ matrix.tag }}
           severity: "CRITICAL,HIGH"
           exit-code: "0"
           format: "table"
+
+      - name: Trivy scan - CRITICAL gate (blocking as of Phase 1A+)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ matrix.tag }}
+          severity: "CRITICAL"
+          exit-code: "1"
+          format: "table"
+          trivyignores: ".trivyignore"
