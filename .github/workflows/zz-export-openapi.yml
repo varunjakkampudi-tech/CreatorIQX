@@ -1,0 +1,45 @@
+name: zz-export-openapi
+
+# Scratch, temporary workflow (see docs/PROGRESS.md "How to run the gates from
+# a sandbox without package access"): this sandbox session has no network
+# route to PyPI, so it cannot run `python scripts/export_openapi.py` locally
+# to regenerate the committed OpenAPI document after adding the planning
+# module's routes. This workflow does it on a real GitHub Actions runner
+# instead and commits the result back to this scratch branch only. Delete
+# this file once the regenerated file has been picked up on `main`.
+
+on:
+  push:
+    branches: ["chore/export-openapi-scratch"]
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies from lockfile
+        run: uv sync --all-packages --locked
+
+      - name: Regenerate the OpenAPI document
+        run: uv run python scripts/export_openapi.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/api-client/openapi.json
+          if git diff --cached --quiet; then
+            echo "No change."
+          else
+            git commit -m "chore: regenerate openapi.json (scratch, see zz-export-openapi)"
+            git push
+          fi
