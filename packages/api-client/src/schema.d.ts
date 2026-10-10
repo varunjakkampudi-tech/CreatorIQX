@@ -107,6 +107,196 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/videos/{video_id}/chapters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compare chapter versions */
+        get: operations["list_chapter_versions_api_v1_videos__video_id__chapters_get"];
+        put?: never;
+        /** Create a chapter version */
+        post: operations["create_chapter_version_api_v1_videos__video_id__chapters_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/chapters/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draft chapters from a transcript */
+        post: operations["generate_chapter_version_api_v1_videos__video_id__chapters_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/chapters/{version_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore an old chapter version */
+        post: operations["restore_chapter_version_api_v1_videos__video_id__chapters__version_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compare metadata versions */
+        get: operations["list_metadata_versions_api_v1_videos__video_id__metadata_get"];
+        put?: never;
+        /** Create a metadata version */
+        post: operations["create_metadata_version_api_v1_videos__video_id__metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/metadata/{version_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore an old metadata version */
+        post: operations["restore_metadata_version_api_v1_videos__video_id__metadata__version_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/scripts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compare script versions */
+        get: operations["list_script_versions_api_v1_videos__video_id__scripts_get"];
+        put?: never;
+        /** Create a script version */
+        post: operations["create_script_version_api_v1_videos__video_id__scripts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/scripts/{version_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore an old script version */
+        post: operations["restore_script_version_api_v1_videos__video_id__scripts__version_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/transcripts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** This video's transcript versions */
+        get: operations["list_transcripts_api_v1_videos__video_id__transcripts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/transcripts/paste": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Paste a transcript */
+        post: operations["paste_transcript_api_v1_videos__video_id__transcripts_paste_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/transcripts/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a transcript file */
+        post: operations["upload_transcript_api_v1_videos__video_id__transcripts_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/transcripts/{transcript_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One transcript */
+        get: operations["get_transcript_api_v1_videos__video_id__transcripts__transcript_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/videos/{video_id}/transition": {
         parameters: {
             query?: never;
@@ -179,6 +369,74 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ChapterIn */
+        ChapterIn: {
+            /** Start Seconds */
+            start_seconds: number;
+            /** Title */
+            title: string;
+        };
+        /** ChapterVersionOut */
+        ChapterVersionOut: {
+            /** Chapters */
+            chapters: components["schemas"]["ChapterIn"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Current */
+            is_current: boolean;
+            /** Parent Version Id */
+            parent_version_id: string | null;
+            /**
+             * Transcript Id
+             * Format: uuid
+             */
+            transcript_id: string;
+        };
+        /** CreateChapterVersionIn */
+        CreateChapterVersionIn: {
+            /** Chapters */
+            chapters: components["schemas"]["ChapterIn"][];
+            /**
+             * Transcript Id
+             * Format: uuid
+             */
+            transcript_id: string;
+        };
+        /** CreateMetadataVersionIn */
+        CreateMetadataVersionIn: {
+            /** Category */
+            category?: string | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Disclosure Altered
+             * @default false
+             */
+            disclosure_altered: boolean;
+            /**
+             * Disclosure Synthetic
+             * @default false
+             */
+            disclosure_synthetic: boolean;
+            /**
+             * Rationale
+             * @default
+             */
+            rationale: string;
+            /**
+             * Tags
+             * @default []
+             */
+            tags: string[];
+            /** Title */
+            title: string;
+        };
         /** CreatePlanIn */
         CreatePlanIn: {
             /**
@@ -193,6 +451,31 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** CreateScriptVersionIn */
+        CreateScriptVersionIn: {
+            /** @default human */
+            author: components["schemas"]["ScriptAuthor"];
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /**
+             * Hook
+             * @default
+             */
+            hook: string;
+            /**
+             * Outline
+             * @default
+             */
+            outline: string;
+            /**
+             * Variant Label
+             * @default default
+             */
+            variant_label: string;
+        };
         /**
          * CurrentWorkspaceOut
          * @description The session's workspace and what the caller may do in it.
@@ -206,6 +489,14 @@ export interface components {
             /** Name */
             name: string;
             role: components["schemas"]["Role"];
+        };
+        /** GenerateChaptersIn */
+        GenerateChaptersIn: {
+            /**
+             * Transcript Id
+             * Format: uuid
+             */
+            transcript_id: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -231,6 +522,47 @@ export interface components {
              */
             workspace_id: string;
         };
+        /** MetadataVersionOut */
+        MetadataVersionOut: {
+            /** Category */
+            category: string | null;
+            /**
+             * Character Limit Warnings
+             * @default []
+             */
+            character_limit_warnings: string[];
+            /** Description */
+            description: string;
+            /** Disclosure Altered */
+            disclosure_altered: boolean;
+            /** Disclosure Synthetic */
+            disclosure_synthetic: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Current */
+            is_current: boolean;
+            /** Parent Version Id */
+            parent_version_id: string | null;
+            /** Rationale */
+            rationale: string;
+            /** Tags */
+            tags: string[];
+            /** Title */
+            title: string;
+        };
+        /** PasteTranscriptIn */
+        PasteTranscriptIn: {
+            /**
+             * Language
+             * @default en
+             */
+            language: string;
+            /** Text */
+            text: string;
+        };
         /** PlanOut */
         PlanOut: {
             /**
@@ -255,6 +587,45 @@ export interface components {
          * @enum {string}
          */
         Role: "owner" | "editor" | "viewer";
+        /**
+         * ScriptAuthor
+         * @description Who wrote this version (spec §7 ``script_versions``: "author (human or AI)").
+         * @enum {string}
+         */
+        ScriptAuthor: "human" | "ai";
+        /** ScriptVersionOut */
+        ScriptVersionOut: {
+            /** Author */
+            author: string;
+            /** Body */
+            body: string;
+            /** Hook */
+            hook: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Current */
+            is_current: boolean;
+            /** Outline */
+            outline: string;
+            /** Parent Version Id */
+            parent_version_id: string | null;
+            /** Variant Label */
+            variant_label: string;
+        };
+        /** SegmentOut */
+        SegmentOut: {
+            /** Confidence */
+            confidence: number | null;
+            /** End Seconds */
+            end_seconds: number | null;
+            /** Start Seconds */
+            start_seconds: number;
+            /** Text */
+            text: string;
+        };
         /**
          * SessionOut
          * @description The signed-in user and the token the client must send on unsafe requests.
@@ -282,9 +653,43 @@ export interface components {
              */
             workspace_id: string;
         };
+        /** TranscriptOut */
+        TranscriptOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Fully Timed */
+            is_fully_timed: boolean;
+            /** Language */
+            language: string;
+            /** Parent Transcript Id */
+            parent_transcript_id: string | null;
+            /** Segments */
+            segments: components["schemas"]["SegmentOut"][];
+            /** Source */
+            source: string;
+            /** Version */
+            version: number;
+            /** Video Id */
+            video_id: string | null;
+        };
         /** TransitionIn */
         TransitionIn: {
             to_status: components["schemas"]["VideoStatus"];
+        };
+        /** UploadTranscriptIn */
+        UploadTranscriptIn: {
+            /** Content */
+            content: string;
+            /** Filename */
+            filename: string;
+            /**
+             * Language
+             * @default en
+             */
+            language: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -488,6 +893,468 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VideoOut"][];
+                };
+            };
+        };
+    };
+    list_chapter_versions_api_v1_videos__video_id__chapters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChapterVersionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_chapter_version_api_v1_videos__video_id__chapters_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateChapterVersionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChapterVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_chapter_version_api_v1_videos__video_id__chapters_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateChaptersIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChapterVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_chapter_version_api_v1_videos__video_id__chapters__version_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChapterVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_metadata_versions_api_v1_videos__video_id__metadata_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataVersionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_metadata_version_api_v1_videos__video_id__metadata_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMetadataVersionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_metadata_version_api_v1_videos__video_id__metadata__version_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_script_versions_api_v1_videos__video_id__scripts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScriptVersionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_script_version_api_v1_videos__video_id__scripts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateScriptVersionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScriptVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_script_version_api_v1_videos__video_id__scripts__version_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScriptVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_transcripts_api_v1_videos__video_id__transcripts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    paste_transcript_api_v1_videos__video_id__transcripts_paste_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasteTranscriptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_transcript_api_v1_videos__video_id__transcripts_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadTranscriptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_transcript_api_v1_videos__video_id__transcripts__transcript_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+                transcript_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
