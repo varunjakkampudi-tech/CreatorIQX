@@ -147,7 +147,7 @@ class HttpYouTubeDataApiClient:
         if fields.publish_at is not None:
             status["publishAt"] = fields.publish_at.astimezone(UTC).isoformat()
 
-        body = {"id": youtube_video_id, "snippet": snippet, "status": status}
+        body: dict[str, object] = {"id": youtube_video_id, "snippet": snippet, "status": status}
         data = await self._put(
             access_token,
             workspace_id=workspace_id,
