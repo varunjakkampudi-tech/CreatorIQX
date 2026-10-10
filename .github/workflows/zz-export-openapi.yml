@@ -32,14 +32,27 @@ jobs:
       - name: Regenerate the OpenAPI document
         run: uv run python scripts/export_openapi.py
 
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install JS dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Regenerate the TypeScript API client
+        run: pnpm --filter @creatoriqx/api-client run generate
+
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add packages/api-client/openapi.json
+          git add packages/api-client/openapi.json packages/api-client/src/schema.d.ts pnpm-lock.yaml
           if git diff --cached --quiet; then
             echo "No change."
           else
-            git commit -m "chore: regenerate openapi.json (scratch, see zz-export-openapi)"
+            git commit -m "chore: regenerate openapi.json and TS client (scratch, see zz-export-openapi)"
             git push
           fi
