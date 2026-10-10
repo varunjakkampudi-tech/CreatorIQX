@@ -35,18 +35,15 @@ jobs:
       - name: Regenerate the OpenAPI document
         run: uv run python scripts/export_openapi.py
 
-      - uses: pnpm/action-setup@v4
-        with:
-          package_json_file: apps/web/package.json
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
-          cache: "pnpm"
-          cache-dependency-path: pnpm-lock.yaml
+          cache: pnpm
 
       - name: Install JS dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Regenerate the TS client
         run: pnpm --filter @creatoriqx/api-client run generate
