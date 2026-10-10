@@ -55,6 +55,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/planner/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The backlog/calendar */
+        get: operations["list_plans_api_v1_planner_plans_get"];
+        put?: never;
+        /** Add a backlog idea */
+        post: operations["create_plan_api_v1_planner_plans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/planner/plans/{plan_id}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turn a plan into a Video */
+        post: operations["promote_plan_api_v1_planner_plans__plan_id__promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The video board */
+        get: operations["list_videos_api_v1_videos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/videos/{video_id}/transition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a video to an allowed next status */
+        post: operations["transition_video_api_v1_videos__video_id__transition_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/current": {
         parameters: {
             query?: never;
@@ -110,6 +179,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CreatePlanIn */
+        CreatePlanIn: {
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /** Scheduled Date */
+            scheduled_date?: string | null;
+            /** Series */
+            series?: string | null;
+            /** Title */
+            title: string;
+        };
         /**
          * CurrentWorkspaceOut
          * @description The session's workspace and what the caller may do in it.
@@ -123,6 +206,11 @@ export interface components {
             /** Name */
             name: string;
             role: components["schemas"]["Role"];
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
         };
         /**
          * MeOut
@@ -142,6 +230,24 @@ export interface components {
              * Format: uuid
              */
             workspace_id: string;
+        };
+        /** PlanOut */
+        PlanOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Notes */
+            notes: string;
+            /** Promoted Video Id */
+            promoted_video_id: string | null;
+            /** Scheduled Date */
+            scheduled_date: string | null;
+            /** Series */
+            series: string | null;
+            /** Title */
+            title: string;
         };
         /**
          * Role
@@ -176,6 +282,45 @@ export interface components {
              */
             workspace_id: string;
         };
+        /** TransitionIn */
+        TransitionIn: {
+            to_status: components["schemas"]["VideoStatus"];
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+        };
+        /** VideoOut */
+        VideoOut: {
+            /** Channel Id */
+            channel_id: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Plan Id */
+            plan_id: string | null;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+        };
+        /**
+         * VideoStatus
+         * @description One node of the lifecycle graph (spec §3).
+         * @enum {string}
+         */
+        VideoStatus: "idea" | "planned" | "drafting" | "qa" | "in_review" | "approved" | "scheduled" | "published" | "analyzed" | "rejected" | "archived";
     };
     responses: never;
     parameters: never;
@@ -239,6 +384,145 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    list_plans_api_v1_planner_plans_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanOut"][];
+                };
+            };
+        };
+    };
+    create_plan_api_v1_planner_plans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_plan_api_v1_planner_plans__plan_id__promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_videos_api_v1_videos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoOut"][];
+                };
+            };
+        };
+    };
+    transition_video_api_v1_videos__video_id__transition_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransitionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
