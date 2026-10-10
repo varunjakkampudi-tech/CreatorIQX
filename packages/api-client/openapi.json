@@ -1,6 +1,29 @@
 {
   "components": {
     "schemas": {
+      "ApproveIn": {
+        "properties": {
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          },
+          "wants_scheduling": {
+            "default": false,
+            "title": "Wants Scheduling",
+            "type": "boolean"
+          }
+        },
+        "title": "ApproveIn",
+        "type": "object"
+      },
       "ChapterIn": {
         "properties": {
           "start_seconds": {
@@ -454,6 +477,152 @@
           "promoted_video_id"
         ],
         "title": "PlanOut",
+        "type": "object"
+      },
+      "PublishSnapshotOut": {
+        "properties": {
+          "approved_at": {
+            "format": "date-time",
+            "title": "Approved At",
+            "type": "string"
+          },
+          "approved_by": {
+            "format": "uuid",
+            "title": "Approved By",
+            "type": "string"
+          },
+          "chapter_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Version Id"
+          },
+          "disclosure_altered": {
+            "title": "Disclosure Altered",
+            "type": "boolean"
+          },
+          "disclosure_synthetic": {
+            "title": "Disclosure Synthetic",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata_version_id": {
+            "format": "uuid",
+            "title": "Metadata Version Id",
+            "type": "string"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          },
+          "script_version_id": {
+            "format": "uuid",
+            "title": "Script Version Id",
+            "type": "string"
+          },
+          "thumbnail_variant_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Variant Id"
+          },
+          "video_id": {
+            "format": "uuid",
+            "title": "Video Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "video_id",
+          "script_version_id",
+          "metadata_version_id",
+          "chapter_version_id",
+          "thumbnail_variant_id",
+          "disclosure_altered",
+          "disclosure_synthetic",
+          "scheduled_at",
+          "approved_by",
+          "approved_at"
+        ],
+        "title": "PublishSnapshotOut",
+        "type": "object"
+      },
+      "QaCheckOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "passed",
+          "reasons"
+        ],
+        "title": "QaCheckOut",
+        "type": "object"
+      },
+      "QaResultOut": {
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/QaCheckOut"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "video_id": {
+            "format": "uuid",
+            "title": "Video Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "video_id",
+          "passed",
+          "checks"
+        ],
+        "title": "QaResultOut",
         "type": "object"
       },
       "Role": {
@@ -1023,6 +1192,59 @@
         ]
       }
     },
+    "/api/v1/videos/{video_id}/approve": {
+      "post": {
+        "operationId": "approve_video_api_v1_videos__video_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishSnapshotOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve the video: freeze an immutable publish snapshot",
+        "tags": [
+          "approval"
+        ]
+      }
+    },
     "/api/v1/videos/{video_id}/chapters": {
       "get": {
         "operationId": "list_chapter_versions_api_v1_videos__video_id__chapters_get",
@@ -1378,6 +1600,92 @@
         ]
       }
     },
+    "/api/v1/videos/{video_id}/qa": {
+      "get": {
+        "operationId": "get_qa_api_v1_videos__video_id__qa_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QaResultOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read the current QA checklist outcome",
+        "tags": [
+          "qa"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/qa/run": {
+      "post": {
+        "operationId": "run_qa_api_v1_videos__video_id__qa_run_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QaResultOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run the pre-publish QA checklist",
+        "tags": [
+          "qa"
+        ]
+      }
+    },
     "/api/v1/videos/{video_id}/scripts": {
       "get": {
         "operationId": "list_script_versions_api_v1_videos__video_id__scripts_get",
@@ -1526,6 +1834,49 @@
         "summary": "Restore an old script version",
         "tags": [
           "scripts"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}/snapshot": {
+      "get": {
+        "operationId": "get_snapshot_api_v1_videos__video_id__snapshot_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishSnapshotOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The video's latest approved publish snapshot",
+        "tags": [
+          "approval"
         ]
       }
     },

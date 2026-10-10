@@ -14,7 +14,7 @@ snapshot on a second call) rather than through this header.
 
 from __future__ import annotations
 
-from fastapi import Header
+from fastapi import Request
 
 from creatoriqx_api.platform.errors import DomainError
 
@@ -27,10 +27,17 @@ class IdempotencyKeyMissingError(DomainError):
     code = "idempotency-key-required"
 
 
-async def require_idempotency_key(
-    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
-) -> str:
-    """Use on every mutating route: ``_: Annotated[str, Depends(require_idempotency_key)]``."""
-    if idempotency_key is None or not idempotency_key.strip():
+async def require_idempotency_key(request: Request) -> str:
+    """Use on every mutating route: ``_: Annotated[str, Depends(require_idempotency_key)]``.
+
+    Reads the raw header off ``Request`` rather than declaring a FastAPI
+    ``Header()`` parameter, the same way ``csrf_protected_session`` reads the
+    CSRF header (``identity/api/dependencies.py``) - so it stays invisible in
+    the generated OpenAPI document, consistent with every other internal
+    header this codebase checks, instead of appearing as a new parameter on
+    every mutating route.
+    """
+    idempotency_key = request.headers.get("Idempotency-Key")
+    if not idempotency_key or not idempotency_key.strip():
         raise IdempotencyKeyMissingError()
     return idempotency_key

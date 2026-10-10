@@ -65,24 +65,21 @@ async def run_qa(
     session: CsrfSessionDep,
     service: QaServiceDep,
     _idempotency_key: IdempotencyKeyDep,
-    wants_scheduling: bool = False,
 ) -> QaResultOut:
-    result = await service.run(
-        workspace_id=session.workspace_id, video_id=video_id, wants_scheduling=wants_scheduling
-    )
+    # wants_scheduling defaults to False here: the schedule check only ever
+    # matters once a video is linked and approval requests a schedule, which
+    # ApprovalService.approve already re-runs QA for with the real value
+    # (spec §3's schedule-eligibility check). This read/run pair is for
+    # Creation-time feedback before that point.
+    result = await service.run(workspace_id=session.workspace_id, video_id=video_id)
     return _out(result)
 
 
 @router.get("", response_model=QaResultOut, summary="Read the current QA checklist outcome")
 async def get_qa(
-    video_id: uuid.UUID,
-    access: ViewerAccessDep,
-    service: QaServiceDep,
-    wants_scheduling: bool = False,
+    video_id: uuid.UUID, access: ViewerAccessDep, service: QaServiceDep
 ) -> QaResultOut:
-    result = await service.run(
-        workspace_id=access.workspace_id, video_id=video_id, wants_scheduling=wants_scheduling
-    )
+    result = await service.run(workspace_id=access.workspace_id, video_id=video_id)
     return _out(result)
 
 
