@@ -10,6 +10,13 @@ Verified against the current YouTube Data API v3 reference
   ``search.list``, which costs far more quota and is for public search.
 * ``videos.list(id=<comma-joined ids>, part=snippet,contentDetails,statistics)``,
   up to 50 ids per call, for per-video metadata and stats.
+* ``videos.list(id=<id>, part=snippet,status)`` + ``videos.update`` (Phase
+  1D, P1D-04): every update re-reads the resource immediately before
+  writing and resends the *entire* ``snippet``/``status`` payload with only
+  the approved snapshot's managed fields overridden (ADR 0007 #5 - YouTube
+  deletes any mutable field omitted from a ``videos.update`` body).
+* ``thumbnails.set`` (upload endpoint, Phase 1D) for the custom-thumbnail
+  capability.
 
 Every call records its quota cost in ``docs/YOUTUBE_CAPABILITIES.md``; the
 cost itself is reserved by the caller (``ChannelIngestionService``) before
@@ -19,16 +26,18 @@ the request is made, not by this client.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 import httpx
 
+from creatoriqx_api.modules.publishing.application.ports import MetadataFields, RemoteVideoState
 from creatoriqx_api.modules.youtube.application.ports import VideoStats
 from creatoriqx_api.modules.youtube.domain.connection import ChannelInfo
 from creatoriqx_api.modules.youtube.domain.errors import YouTubeApiError
 from creatoriqx_api.platform.logging import get_logger
 
 _API_BASE = "https://www.googleapis.com/youtube/v3"
+_UPLOAD_API_BASE = "https://www.googleapis.com/upload/youtube/v3"
 _PLAYLIST_ITEMS_PAGE_SIZE = 50
 _logger = get_logger("creatoriqx.youtube.data_api")
 
@@ -96,6 +105,139 @@ class HttpYouTubeDataApiClient:
             },
         )
         return [_video_stats_from_item(item) for item in _list_of_dicts(data, "items")]
+
+    async def get_video_state(
+        self, access_token: str, *, workspace_id: uuid.UUID, youtube_video_id: str
+    ) -> RemoteVideoState:
+        """``videos.list(part=snippet,status)`` for one video (spec §3)."""
+        item = await self._get_video_resource(
+            access_token, workspace_id=workspace_id, youtube_video_id=youtube_video_id
+        )
+        return _remote_video_state_from_item(item)
+
+    async def update_metadata(
+        self,
+        access_token: str,
+        *,
+        workspace_id: uuid.UUID,
+        youtube_video_id: str,
+        current: RemoteVideoState,
+        fields: MetadataFields,
+    ) -> RemoteVideoState:
+        """``videos.update``, resending every field YouTube manages on this video.
+
+        Re-reads the resource itself immediately before writing (ADR 0007 #5)
+        rather than trusting the caller's ``current`` (which may be a moment
+        stale by the time this runs) - only the title/description/tags/
+        category/publishAt the approved snapshot governs are overridden; every
+        other ``snippet``/``status`` field already on the video is sent back
+        unchanged so YouTube does not delete it.
+        """
+        item = await self._get_video_resource(
+            access_token, workspace_id=workspace_id, youtube_video_id=youtube_video_id
+        )
+        snippet = dict(_dict_get(item, "snippet"))
+        status = dict(_dict_get(item, "status"))
+
+        snippet["title"] = fields.title
+        snippet["description"] = fields.description
+        snippet["tags"] = list(fields.tags)
+        if fields.category is not None:
+            snippet["categoryId"] = fields.category
+        if fields.publish_at is not None:
+            status["publishAt"] = fields.publish_at.astimezone(UTC).isoformat()
+
+        body = {"id": youtube_video_id, "snippet": snippet, "status": status}
+        data = await self._put(
+            access_token,
+            workspace_id=workspace_id,
+            path="videos",
+            params={"part": "snippet,status"},
+            json_body=body,
+        )
+        return _remote_video_state_from_item(data)
+
+    async def set_thumbnail(
+        self,
+        access_token: str,
+        *,
+        workspace_id: uuid.UUID,
+        youtube_video_id: str,
+        image_bytes: bytes,
+        content_type: str,
+    ) -> None:
+        """``thumbnails.set`` (the custom-thumbnail upload endpoint, spec §3)."""
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.post(
+                    f"{_UPLOAD_API_BASE}/thumbnails/set",
+                    params={"videoId": youtube_video_id},
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Content-Type": content_type,
+                    },
+                    content=image_bytes,
+                    timeout=self._timeout_seconds,
+                )
+            except httpx.HTTPError as exc:
+                raise YouTubeApiError(detail=f"HTTP error calling thumbnails.set: {exc}") from exc
+        if resp.status_code != 200:
+            _logger.warning(
+                "youtube_api_error",
+                workspace_id=str(workspace_id),
+                path="thumbnails/set",
+                status_code=resp.status_code,
+            )
+            raise YouTubeApiError(
+                detail=f"YouTube API thumbnails.set returned {resp.status_code}: {resp.text[:200]}"
+            )
+
+    async def _get_video_resource(
+        self, access_token: str, *, workspace_id: uuid.UUID, youtube_video_id: str
+    ) -> dict[str, object]:
+        data = await self._get(
+            access_token,
+            workspace_id=workspace_id,
+            path="videos",
+            params={"part": "snippet,status", "id": youtube_video_id},
+        )
+        items = _list_of_dicts(data, "items")
+        if not items:
+            raise YouTubeApiError(detail=f"videos.list returned no video for id {youtube_video_id}")
+        return items[0]
+
+    async def _put(
+        self,
+        access_token: str,
+        *,
+        workspace_id: uuid.UUID,
+        path: str,
+        params: dict[str, str],
+        json_body: dict[str, object],
+    ) -> dict[str, object]:
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.put(
+                    f"{_API_BASE}/{path}",
+                    params=params,
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    json=json_body,
+                    timeout=self._timeout_seconds,
+                )
+            except httpx.HTTPError as exc:
+                raise YouTubeApiError(detail=f"HTTP error calling {path}: {exc}") from exc
+        if resp.status_code != 200:
+            _logger.warning(
+                "youtube_api_error",
+                workspace_id=str(workspace_id),
+                path=path,
+                status_code=resp.status_code,
+            )
+            raise YouTubeApiError(
+                detail=f"YouTube API {path} returned {resp.status_code}: {resp.text[:200]}"
+            )
+        body = resp.json()
+        return body if isinstance(body, dict) else {}
 
     async def _get(
         self, access_token: str, *, workspace_id: uuid.UUID, path: str, params: dict[str, str]
@@ -174,6 +316,39 @@ def _video_stats_from_item(item: dict[str, object]) -> VideoStats:
         view_count=_maybe_int(statistics.get("viewCount")),
         like_count=_maybe_int(statistics.get("likeCount")),
         comment_count=_maybe_int(statistics.get("commentCount")),
+    )
+
+
+def _remote_video_state_from_item(item: dict[str, object]) -> RemoteVideoState:
+    snippet = _dict_get(item, "snippet")
+    status = _dict_get(item, "status")
+    tags_raw = snippet.get("tags", [])
+    tags = tuple(t for t in tags_raw if isinstance(t, str)) if isinstance(tags_raw, list) else ()
+    privacy_status = str(status.get("privacyStatus", "private"))
+    publish_at_raw = status.get("publishAt")
+    publish_at = (
+        _parse_timestamp(publish_at_raw)
+        if isinstance(publish_at_raw, str) and publish_at_raw
+        else None
+    )
+    # OQ-07 (docs/OPEN_QUESTIONS.md): YouTube exposes no direct "has this
+    # video ever been public" flag. Conservative heuristic, documented
+    # rather than assumed silently: currently public, or scheduled to go
+    # public at a publishAt that has already passed, counts as published;
+    # a still-private video with no publishAt (or a future one) does not.
+    has_been_published = privacy_status == "public" or (
+        publish_at is not None and publish_at <= datetime.now(UTC)
+    )
+    return RemoteVideoState(
+        youtube_video_id=str(item.get("id", "")),
+        title=str(snippet.get("title", "")),
+        description=str(snippet.get("description", "")),
+        tags=tags,
+        category=_str_or_none(snippet.get("categoryId")),
+        privacy_status=privacy_status,
+        has_been_published=has_been_published,
+        publish_at=publish_at,
+        etag=_str_or_none(item.get("etag")),
     )
 
 
