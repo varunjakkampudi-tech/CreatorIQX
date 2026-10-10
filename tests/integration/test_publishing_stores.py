@@ -117,6 +117,7 @@ def test_publishing_stores_round_trip_under_rls() -> None:
             async with factory() as session:
                 await _add_user(session, user_id, "owner@example.com")
                 await _add_workspace(session, workspace_id, "W")
+                await set_tenant_context(session, workspace_id=workspace_id, user_id=user_id)
                 await _add_channel(session, channel_id, workspace_id)
                 await session.commit()
 
